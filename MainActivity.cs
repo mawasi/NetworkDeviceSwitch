@@ -22,7 +22,9 @@ namespace NetworkDeviceSwitch
 
 		public TextView StatusView = null;
 
-		Switch mWifiSwitch = null;
+		Switch mWifiSwitch = null;		// Wifiスイッチ
+		Switch mMobileSwitch = null;	// モバイルデータスイッチ
+		Switch mTetheringSwitch = null;	// テザリングスイッチ
 
 		ConnectivityManager	mConnectivityManager = null;
 
@@ -46,8 +48,6 @@ namespace NetworkDeviceSwitch
 //			mWifiSwitch.Checked;
 	//		mWifiSwitch.SetOnCheckedChangeListener(this);
 			mWifiSwitch.CheckedChange += OnWifiSwitchCheckedChange;
-			// wifi変更してすぐにステート確認しても欲しい情報取れないのでこれはだめ
-//			mWifiSwitch.CheckedChange += OnSwitchCheckedChange;
 
 			mConnectivityManager = (ConnectivityManager)GetSystemService(ConnectivityService);
 
@@ -67,7 +67,7 @@ namespace NetworkDeviceSwitch
 			}
 
 			// 通信情報確認
-			CheckNetworkState();
+	//		CheckNetworkState();
 
 			// このActivityの間だけブロードキャストされればいいので以下の方法で登録する
 			// 通信状況取得用レシーバー登録
@@ -95,16 +95,6 @@ namespace NetworkDeviceSwitch
 					Toast.MakeText(this, "Wifi Disabled.",ToastLength.Short).Show();
 				}	
 			}
-		}
-
-		/// <summary>
-		/// 
-		/// </summary>
-		/// <param name="sender"></param>
-		/// <param name="e"></param>
-		void OnSwitchCheckedChange(object sender, CompoundButton.CheckedChangeEventArgs e)
-		{
-			CheckNetworkState();
 		}
 
 

@@ -7,10 +7,23 @@
     android:minHeight="25px">
     <Switch
         android:text="WIFI Switch"
+        android:textAppearance="?android:attr/textAppearanceMedium"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:checked="false"
         android:id="@+id/WifiSwitch" />
+    <Switch
+        android:text="MobileData Switch"
+        android:textAppearance="?android:attr/textAppearanceMedium"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:id="@+id/MobileSwitch" />
+    <Switch
+        android:text="Tethering Switch"
+        android:textAppearance="?android:attr/textAppearanceMedium"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:id="@+id/TetheringSwitch" />
     <TextView
         android:textAppearance="?android:attr/textAppearanceMedium"
         android:layout_width="match_parent"
