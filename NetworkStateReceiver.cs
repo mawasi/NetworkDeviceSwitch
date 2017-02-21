@@ -1,14 +1,17 @@
-﻿
-using Android.Content;
+﻿using Android.Content;
 using Android.Net.Wifi;
 using Android.Net;
 using Android.App;
 using Android.Widget;
+using System;
 
 namespace NetworkDeviceSwitch
 {
-	// この登録方法はアプリがバックグラウンドにいる間もブロードキャストされるので
-	// 今回はそこまで必要ないのでActivity内でインスタンス化して登録する
+	/// <summary>
+	/// 通信状態の切り替わり時にブロードキャストされ、その時のネットワークデバイス情報を取得、表示するクラス
+	/// 以下の登録方法はアプリがバックグラウンドにいる間もブロードキャストされるので
+	/// 今回はそこまで必要ないのでActivity内でインスタンス化して登録する
+	/// </summary>
 //	[BroadcastReceiver]
 //	[IntentFilter(new[] { MainActivity.CONNECTIVITY_CHANGE })]
 	public class NetworkStateReceiver : BroadcastReceiver
@@ -65,7 +68,11 @@ namespace NetworkDeviceSwitch
 					WifiInfo info = mWifiManager.ConnectionInfo;
 					mParent.StatusView.Text += string.Format("BSSID : {0}\n", info.BSSID);
 					mParent.StatusView.Text += string.Format("SSID : {0}\n", info.SSID);
-					mParent.StatusView.Text += string.Format("IpAddress : {0}\n", info.IpAddress);
+
+					byte[] byteArray = BitConverter.GetBytes(info.IpAddress);
+					Java.Net.InetAddress inetAddress = Java.Net.InetAddress.GetByAddress(byteArray);
+					string ipaddress = inetAddress.HostAddress;
+					mParent.StatusView.Text += string.Format("IpAddress : {0}\n", ipaddress);
 					break;
 				case ConnectivityType.Mobile:
 					break;
