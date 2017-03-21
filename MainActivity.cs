@@ -57,6 +57,7 @@ namespace NetworkDeviceSwitch
 
 
 			mTetheringSwitch = FindViewById<Switch>(Resource.Id.TetheringSwitch);
+			mTetheringSwitch.CheckedChange += OnTetheringSwitchCheckedChange;
 
 
 			mConnectivityManager = (ConnectivityManager)GetSystemService(ConnectivityService);
@@ -75,7 +76,7 @@ namespace NetworkDeviceSwitch
 			NetworkStateReceiver NetStateReceiver = new NetworkStateReceiver(this, mConnectivityManager, mWifiManager);
 			RegisterReceiver(NetStateReceiver, NetintentFilter);
 
-
+			// ビューの初期化
 			InitializeView();
 
 		}
@@ -86,7 +87,7 @@ namespace NetworkDeviceSwitch
 		/// </summary>
 		void InitializeView()
 		{
-
+			// Wifi機能が有効ならスイッチをONにしておく
 			if(mWifiManager.IsWifiEnabled) {
 				mWifiSwitch.Checked = true;
 			}
@@ -95,6 +96,8 @@ namespace NetworkDeviceSwitch
 
 		/// <summary>
 		/// Called when the Wifi switch changes
+		/// reference
+		/// http://blog.dtdweb.com/2013/03/08/android-wifi-network/
 		/// </summary>
 		/// <param name="sender"></param>
 		/// <param name="e"></param>
@@ -133,14 +136,117 @@ namespace NetworkDeviceSwitch
 
 		/// <summary>
 		/// Called when the Tethering switch changes
+		/// required permission Manifest.permission.WRITE_SETTINGS
+		/// reference
+		/// http://qiita.com/ki_siro/items/a45c27ee3cb204487b85
+		/// https://sites.google.com/site/umibenojinjin/home/android
+		/// http://stackoverflow.com/questions/7048922/android-2-3-wifi-hotspot-api
 		/// </summary>
 		/// <param name="sender"></param>
 		/// <param name="e"></param>
 		void OnTetheringSwitchCheckedChange(object sender, CompoundButton.CheckedChangeEventArgs e)
 		{
-			// ConnectivityManager, WifiManagerあたりで何か探してみる
-			// Wifi-Access Pointとかで調べる
-			// https://github.com/xamarin/xamarin-android githubのこれ見てみる
+
+#if false
+			GetWifiApState();
+
+			// リフレクションでメソッド全取得
+			var methods = mWifiManager.Class.GetDeclaredMethods();
+
+			Android.Util.Log.Info("TetheringTest", "mWifiManager Method List Start.");
+			foreach(var method in methods) {
+				Android.Util.Log.Info("TetheringTest", "Method: {0}", method.Name);
+				foreach(var param in method.GetParameterTypes()) {
+					Android.Util.Log.Info("TetheringTest", "Parameter: {0}", param.Name);
+				}
+			}
+			Android.Util.Log.Info("TetheringTest", "mWifiManager Method List End.");
+
+
+			Android.Util.Log.Info("TetheringTest", "dhcp Info {0}", mWifiManager.DhcpInfo.ToString());
+			// WifiConfigurationにテザリング用のWifiコンフィグも入ってるみたい。
+			var Configurations =  mWifiManager.ConfiguredNetworks;
+			if(Configurations != null) {
+				Android.Util.Log.Info("TetheringTest", "WifiConfigure Count {0}", Configurations.Count);
+				for(int i = 0; i < Configurations.Count; i++) {
+					Android.Util.Log.Info("TetheringTest", "WifiConfigure {0}", i);
+					Android.Util.Log.Info("TetheringTest", "		ssid {0}", Configurations[i].Ssid);
+					Android.Util.Log.Info("TetheringTest", "		NetworkId {0}", Configurations[i].NetworkId);
+					Android.Util.Log.Info("TetheringTest", "		PreSharedKey {0}", Configurations[i].PreSharedKey);
+					Android.Util.Log.Info("TetheringTest", "WifiConfigure {0} End.", i);
+				}
+			}
+#else
+			if(e.IsChecked) {
+				if(ToggleWifiAp(e.IsChecked)) {
+					Toast.MakeText(this, "WifiAp Enabled.", ToastLength.Short).Show();
+				}
+			}
+			else {
+				if(ToggleWifiAp(e.IsChecked)) {
+					Toast.MakeText(this, "WifiAp Disabled.", ToastLength.Short).Show();
+				}
+			}
+#endif
+
+		}
+
+		/// <summary>
+		/// Toggle Wifi access point switch
+		/// </summary>
+		/// <param name="enabled"></param>
+		/// <returns></returns>
+		bool ToggleWifiAp(bool enabled)
+		{
+			bool result = false;
+
+			if(GetWifiApState() != enabled) {
+				SetWifiApEnabled(enabled);
+				result = true;
+			}
+
+			return result;
+		}
+
+		/// <summary>
+		/// Get Wifi access point state.
+		/// </summary>
+		/// <returns>Ap Enabled is return true</returns>
+		bool GetWifiApState()
+		{
+			bool result = false;
+
+			try {
+				// 11 = テザリング無効, 13 = テザリング有効	多分
+				var method = mWifiManager.Class.GetDeclaredMethod("getWifiApState");
+				method.Accessible = true;
+				int state = (int)method.Invoke(mWifiManager);
+				if(state == 13) {
+					result = true;
+				}
+//				Android.Util.Log.Info("TetheringTest", method.Invoke(mWifiManager).ToString());
+			}
+			catch(Exception e) {
+				Android.Util.Log.Error("Error", e.ToString());
+			}
+
+			return result;
+		}
+
+		/// <summary>
+		/// Set Wifi access point enabled.
+		/// </summary>
+		/// <param name="enabled"></param>
+		void SetWifiApEnabled(bool enabled)
+		{
+			try {
+				var method = mWifiManager.Class.GetDeclaredMethod("setWifiApEnabled", new WifiConfiguration().Class, Java.Lang.Boolean.Type);
+				method.Accessible = true;
+				method.Invoke(mWifiManager, null, enabled);
+			}
+			catch(Exception e) {
+				Android.Util.Log.Error("Error", e.ToString());
+			}
 		}
 
 		/// <summary>
@@ -254,6 +360,7 @@ namespace NetworkDeviceSwitch
 		bool IsMobileDataEnabledFromLollipos()
 		{
 			bool state = false;
+			// うまくパラメータ返ってこない
 			if(Build.VERSION.SdkInt >= BuildVersionCodes.Lollipop) {
 				state = Android.Provider.Settings.Global.GetInt(ContentResolver, "mobile_data", 0) == 1;
 			}
