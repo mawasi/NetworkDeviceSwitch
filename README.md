@@ -2,5 +2,5 @@
 Android NetworkDeviceSwitch App with Xamarin
 
 # Description
-Android ネットワークデバイスを On/Off する App です。<br>
+Android端末のネットワークデバイスを On/Off する アプリケーション です。<br>
 Xamarin for Visual Studio で作成されています。<br>

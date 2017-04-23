@@ -13,7 +13,7 @@ using System;
 
 namespace NetworkDeviceSwitch
 {
-	[Activity(Label = "NetworkDeviceSwitch",MainLauncher = true,Icon = "@drawable/icon")]
+	[Activity(Label = "@string/ApplicationName",MainLauncher = true,Icon = "@drawable/icon")]
 	public class MainActivity:Activity
 	{
 
@@ -21,6 +21,7 @@ namespace NetworkDeviceSwitch
 
 		// ネットワーク切り替え時にブロードキャストされる
 		public const string CONNECTIVITY_CHANGE = ConnectivityManager.ConnectivityAction;
+		public const string SCAN_RESULTS = WifiManager.ScanResultsAvailableAction;
 
 		public const string PhoneStateChanged = TelephonyManager.ActionPhoneStateChanged;
 
@@ -52,8 +53,8 @@ namespace NetworkDeviceSwitch
 			mWifiSwitch = FindViewById<Switch>(Resource.Id.WifiSwitch);
 			mWifiSwitch.CheckedChange += OnWifiSwitchCheckedChange;
 
-			mMobileSwitch = FindViewById<Switch>(Resource.Id.MobileSwitch);
-			mMobileSwitch.CheckedChange += OnMobileDataSwitchCheckedChange;
+//			mMobileSwitch = FindViewById<Switch>(Resource.Id.MobileSwitch);
+//			mMobileSwitch.CheckedChange += OnMobileDataSwitchCheckedChange;
 
 
 			mTetheringSwitch = FindViewById<Switch>(Resource.Id.TetheringSwitch);
@@ -73,7 +74,8 @@ namespace NetworkDeviceSwitch
 			// 通信状況取得用レシーバー登録
 			var NetintentFilter = new IntentFilter();
 			NetintentFilter.AddAction(CONNECTIVITY_CHANGE);
-			NetworkStateReceiver NetStateReceiver = new NetworkStateReceiver(this, mConnectivityManager, mWifiManager);
+			NetintentFilter.AddAction(SCAN_RESULTS);
+			NetworkStateReceiver NetStateReceiver = new NetworkStateReceiver(this);
 			RegisterReceiver(NetStateReceiver, NetintentFilter);
 
 			// ビューの初期化
@@ -90,6 +92,11 @@ namespace NetworkDeviceSwitch
 			// Wifi機能が有効ならスイッチをONにしておく
 			if(mWifiManager.IsWifiEnabled) {
 				mWifiSwitch.Checked = true;
+			}
+
+			// Tethering機能が有効ならスイッチをON. Wifi機能とは排他的関係
+			if(GetWifiApState()) {
+				mTetheringSwitch.Checked = true;
 			}
 
 		}

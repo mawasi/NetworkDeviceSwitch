@@ -3,30 +3,37 @@
     android:orientation="vertical"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:divider="@layout/Divider"
+    android:dividerPadding="20dp"
+    android:showDividers="middle"
     android:minWidth="25px"
     android:minHeight="25px">
     <Switch
-        android:text="WIFI Switch"
+        android:text="@string/WifiSwitchView"
         android:textAppearance="?android:attr/textAppearanceMedium"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:checked="false"
         android:id="@+id/WifiSwitch" />
+<!-- モバイルデータON,OFFは一旦諦め
     <Switch
         android:text="MobileData Switch"
         android:textAppearance="?android:attr/textAppearanceMedium"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:id="@+id/MobileSwitch" />
+-->
     <Switch
-        android:text="Tethering Switch"
+        android:text="@string/TetheringSwitchView"
         android:textAppearance="?android:attr/textAppearanceMedium"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:id="@+id/TetheringSwitch" />
     <TextView
+        android:text="@string/StatusView"
         android:textAppearance="?android:attr/textAppearanceMedium"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:id="@+id/StatusView" />
+        android:id="@+id/StatusView"
+        android:textSize="30sp" />
 </LinearLayout>

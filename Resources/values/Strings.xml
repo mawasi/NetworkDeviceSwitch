@@ -2,4 +2,7 @@
 <resources>
     <string name="Hello">Hello World, Click Me!</string>
     <string name="ApplicationName">NetworkDeviceSwitch</string>
+	<string name="WifiSwitchView">Wifi Enabled</string>
+	<string name="TetheringSwitchView">Tethering Enabled</string>
+	<string name="StatusView">Status</string>
 </resources>
