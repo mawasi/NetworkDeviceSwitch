@@ -26,7 +26,12 @@ namespace NetworkDeviceSwitch
 		public const string PhoneStateChanged = TelephonyManager.ActionPhoneStateChanged;
 
 
-		Switch mWifiSwitch = null;			// Wifiスイッチ
+		#region Field
+
+		/// <summary>
+		/// Wifi Switch View
+		/// </summary>
+		Switch mWifiSwitch = null;
 		Switch mMobileSwitch = null;		// モバイルデータスイッチ
 		Switch mTetheringSwitch = null;		// テザリングスイッチ
 
@@ -36,8 +41,33 @@ namespace NetworkDeviceSwitch
 		ConnectivityManager	mConnectivityManager = null;
 		WifiManager			mWifiManager = null;
 		TelephonyManager	mTelephonyManager = null;
-		SubscriptionManager mSubscriptionManager = null;	// API22以降
+		SubscriptionManager mSubscriptionManager = null;    // API22以降
 
+		/// <summary>
+		/// Wifi Controller
+		/// </summary>
+		WifiController			_WifiController = null;
+
+		#endregion
+
+		#region Property
+
+		/// <summary>
+		/// Wifi Switch View
+		/// </summary>
+		public Switch WifiSwitch {
+			get { return mWifiSwitch; }
+		}
+
+		public Switch MobileSwitch {
+			get { return mMobileSwitch; }
+		}
+
+		public Switch TetheringSwitch {
+			get { return mTetheringSwitch; }
+		}
+
+		#endregion
 
 
 		protected override void OnCreate(Bundle bundle)
@@ -51,7 +81,6 @@ namespace NetworkDeviceSwitch
 			StatusView.Text = "";
 
 			mWifiSwitch = FindViewById<Switch>(Resource.Id.WifiSwitch);
-			mWifiSwitch.CheckedChange += OnWifiSwitchCheckedChange;
 
 //			mMobileSwitch = FindViewById<Switch>(Resource.Id.MobileSwitch);
 //			mMobileSwitch.CheckedChange += OnMobileDataSwitchCheckedChange;
@@ -78,9 +107,18 @@ namespace NetworkDeviceSwitch
 			NetworkStateReceiver NetStateReceiver = new NetworkStateReceiver(this);
 			RegisterReceiver(NetStateReceiver, NetintentFilter);
 
+			// Wifi制御クラス生成
+			_WifiController = new WifiController(this, WifiSwitch, mWifiManager);
+
+		}
+
+
+		protected override void OnStart()
+		{
+			base.OnStart();
+
 			// ビューの初期化
 			InitializeView();
-
 		}
 
 
@@ -89,10 +127,8 @@ namespace NetworkDeviceSwitch
 		/// </summary>
 		void InitializeView()
 		{
-			// Wifi機能が有効ならスイッチをONにしておく
-			if(mWifiManager.IsWifiEnabled) {
-				mWifiSwitch.Checked = true;
-			}
+			// Wifi コントローラ初期化
+			_WifiController.Initialize();
 
 			// Tethering機能が有効ならスイッチをON. Wifi機能とは排他的関係
 			if(GetWifiApState()) {
@@ -101,26 +137,6 @@ namespace NetworkDeviceSwitch
 
 		}
 
-		/// <summary>
-		/// Called when the Wifi switch changes
-		/// reference
-		/// http://blog.dtdweb.com/2013/03/08/android-wifi-network/
-		/// </summary>
-		/// <param name="sender"></param>
-		/// <param name="e"></param>
-		void OnWifiSwitchCheckedChange(object sender, CompoundButton.CheckedChangeEventArgs e)
-		{
-			if(e.IsChecked) {
-				if(ToggleWifi(e.IsChecked)) {
-					Toast.MakeText(this, "Wifi Enabled.",ToastLength.Short).Show();
-				}
-			}
-			else {
-				if(ToggleWifi(e.IsChecked)) {
-					Toast.MakeText(this, "Wifi Disabled.",ToastLength.Short).Show();
-				}	
-			}
-		}
 
 		/// <summary>
 		/// Called when the Mobiledata switch changes
@@ -254,22 +270,6 @@ namespace NetworkDeviceSwitch
 			catch(Exception e) {
 				Android.Util.Log.Error("Error", e.ToString());
 			}
-		}
-
-		/// <summary>
-		/// Toggle Wifi switch
-		/// </summary>
-		/// <param name="enabled"></param>
-		/// <returns></returns>
-		bool ToggleWifi(bool enabled)
-		{
-			bool result = false;
-			if(mWifiManager.IsWifiEnabled != enabled) {
-				mWifiManager.SetWifiEnabled(enabled);
-				result = true;
-			}
-
-			return result;
 		}
 
 		/// <summary>
