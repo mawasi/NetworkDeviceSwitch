@@ -55,7 +55,7 @@ namespace NetworkDeviceSwitch
 		/// <summary>
 		/// Constructor
 		/// </summary>
-		/// <param name="parent"></param>
+		/// <param name="activity"></param>
 		/// <param name="s"></param>
 		/// <param name="wifi"></param>
 		public WifiController(Activity activity, Switch s, WifiManager wifi)
@@ -71,7 +71,7 @@ namespace NetworkDeviceSwitch
 
 		#endregion
 
-		#region Fuuction
+		#region Method
 
 		/// <summary>
 		/// 各種初期化
@@ -116,7 +116,7 @@ namespace NetworkDeviceSwitch
 			return result;
 		}
 
-		#endregion
+		#endregion	// Method
 
 	}
 }

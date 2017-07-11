@@ -16,14 +16,18 @@ namespace NetworkDeviceSwitch
 	[Activity(Label = "@string/ApplicationName",MainLauncher = true,Icon = "@drawable/icon")]
 	public class MainActivity:Activity
 	{
+		#region Definition
 
 		// NetworkStateReceiverのマニフェスト登録用文字列
 
 		// ネットワーク切り替え時にブロードキャストされる
 		public const string CONNECTIVITY_CHANGE = ConnectivityManager.ConnectivityAction;
+		// アクセスポイントのスキャンが完了したときにブロードキャストされる
 		public const string SCAN_RESULTS = WifiManager.ScanResultsAvailableAction;
 
 		public const string PhoneStateChanged = TelephonyManager.ActionPhoneStateChanged;
+
+		#endregion	// Definition
 
 
 		#region Field
@@ -48,7 +52,12 @@ namespace NetworkDeviceSwitch
 		/// </summary>
 		WifiController			_WifiController = null;
 
-		#endregion
+		/// <summary>
+		/// Tethering Controller
+		/// </summary>
+		TetheringController		_TetheringController = null;
+
+		#endregion	// Field
 
 		#region Property
 
@@ -67,8 +76,10 @@ namespace NetworkDeviceSwitch
 			get { return mTetheringSwitch; }
 		}
 
-		#endregion
+		#endregion // Property
 
+
+		#region Base Method
 
 		protected override void OnCreate(Bundle bundle)
 		{
@@ -80,22 +91,17 @@ namespace NetworkDeviceSwitch
 			StatusView = FindViewById<TextView>(Resource.Id.StatusView);
 			StatusView.Text = "";
 
+			// Wifiスイッチビュー取得
 			mWifiSwitch = FindViewById<Switch>(Resource.Id.WifiSwitch);
+
+			// テザリングスイッチビュー取得
+			mTetheringSwitch = FindViewById<Switch>(Resource.Id.TetheringSwitch);
 
 //			mMobileSwitch = FindViewById<Switch>(Resource.Id.MobileSwitch);
 //			mMobileSwitch.CheckedChange += OnMobileDataSwitchCheckedChange;
 
-
-			mTetheringSwitch = FindViewById<Switch>(Resource.Id.TetheringSwitch);
-			mTetheringSwitch.CheckedChange += OnTetheringSwitchCheckedChange;
-
-
-			mConnectivityManager = (ConnectivityManager)GetSystemService(ConnectivityService);
-			mWifiManager = (WifiManager)GetSystemService(WifiService);
-			mTelephonyManager = (TelephonyManager)GetSystemService(TelephonyService);
-			if(Build.VERSION.SdkInt > BuildVersionCodes.Lollipop) {
-				mSubscriptionManager = (SubscriptionManager)GetSystemService(TelephonySubscriptionService);
-			}
+			// システムサービスの取得
+			GatherSystemService();
 
 	//		mConnectivityManager.StopUsingNetworkFeature(ConnectivityType.Mobile, "");
 
@@ -107,8 +113,13 @@ namespace NetworkDeviceSwitch
 			NetworkStateReceiver NetStateReceiver = new NetworkStateReceiver(this);
 			RegisterReceiver(NetStateReceiver, NetintentFilter);
 
+
 			// Wifi制御クラス生成
 			_WifiController = new WifiController(this, WifiSwitch, mWifiManager);
+
+			// テザリング制御クラス生成
+			_TetheringController = new TetheringController(this, TetheringSwitch, mWifiManager);
+
 
 		}
 
@@ -122,6 +133,11 @@ namespace NetworkDeviceSwitch
 		}
 
 
+		#endregion // Base Method
+
+
+		#region Private Method
+
 		/// <summary>
 		/// 各種ビューの初期化
 		/// </summary>
@@ -130,11 +146,23 @@ namespace NetworkDeviceSwitch
 			// Wifi コントローラ初期化
 			_WifiController.Initialize();
 
-			// Tethering機能が有効ならスイッチをON. Wifi機能とは排他的関係
-			if(GetWifiApState()) {
-				mTetheringSwitch.Checked = true;
-			}
+			// Tethering コントローラ初期化
+			_TetheringController.Initialize();
 
+		}
+
+
+		/// <summary>
+		/// システムサービスの収集
+		/// </summary>
+		void GatherSystemService()
+		{
+			mConnectivityManager = (ConnectivityManager)GetSystemService(ConnectivityService);
+			mWifiManager = (WifiManager)GetSystemService(WifiService);
+			mTelephonyManager = (TelephonyManager)GetSystemService(TelephonyService);
+			if(Build.VERSION.SdkInt > BuildVersionCodes.Lollipop) {
+				mSubscriptionManager = (SubscriptionManager)GetSystemService(TelephonySubscriptionService);
+			}
 		}
 
 
@@ -157,120 +185,7 @@ namespace NetworkDeviceSwitch
 			}
 		}
 
-		/// <summary>
-		/// Called when the Tethering switch changes
-		/// required permission Manifest.permission.WRITE_SETTINGS
-		/// reference
-		/// http://qiita.com/ki_siro/items/a45c27ee3cb204487b85
-		/// https://sites.google.com/site/umibenojinjin/home/android
-		/// http://stackoverflow.com/questions/7048922/android-2-3-wifi-hotspot-api
-		/// </summary>
-		/// <param name="sender"></param>
-		/// <param name="e"></param>
-		void OnTetheringSwitchCheckedChange(object sender, CompoundButton.CheckedChangeEventArgs e)
-		{
 
-#if false
-			GetWifiApState();
-
-			// リフレクションでメソッド全取得
-			var methods = mWifiManager.Class.GetDeclaredMethods();
-
-			Android.Util.Log.Info("TetheringTest", "mWifiManager Method List Start.");
-			foreach(var method in methods) {
-				Android.Util.Log.Info("TetheringTest", "Method: {0}", method.Name);
-				foreach(var param in method.GetParameterTypes()) {
-					Android.Util.Log.Info("TetheringTest", "Parameter: {0}", param.Name);
-				}
-			}
-			Android.Util.Log.Info("TetheringTest", "mWifiManager Method List End.");
-
-
-			Android.Util.Log.Info("TetheringTest", "dhcp Info {0}", mWifiManager.DhcpInfo.ToString());
-			// WifiConfigurationにテザリング用のWifiコンフィグも入ってるみたい。
-			var Configurations =  mWifiManager.ConfiguredNetworks;
-			if(Configurations != null) {
-				Android.Util.Log.Info("TetheringTest", "WifiConfigure Count {0}", Configurations.Count);
-				for(int i = 0; i < Configurations.Count; i++) {
-					Android.Util.Log.Info("TetheringTest", "WifiConfigure {0}", i);
-					Android.Util.Log.Info("TetheringTest", "		ssid {0}", Configurations[i].Ssid);
-					Android.Util.Log.Info("TetheringTest", "		NetworkId {0}", Configurations[i].NetworkId);
-					Android.Util.Log.Info("TetheringTest", "		PreSharedKey {0}", Configurations[i].PreSharedKey);
-					Android.Util.Log.Info("TetheringTest", "WifiConfigure {0} End.", i);
-				}
-			}
-#else
-			if(e.IsChecked) {
-				if(ToggleWifiAp(e.IsChecked)) {
-					Toast.MakeText(this, "WifiAp Enabled.", ToastLength.Short).Show();
-				}
-			}
-			else {
-				if(ToggleWifiAp(e.IsChecked)) {
-					Toast.MakeText(this, "WifiAp Disabled.", ToastLength.Short).Show();
-				}
-			}
-#endif
-
-		}
-
-		/// <summary>
-		/// Toggle Wifi access point switch
-		/// </summary>
-		/// <param name="enabled"></param>
-		/// <returns></returns>
-		bool ToggleWifiAp(bool enabled)
-		{
-			bool result = false;
-
-			if(GetWifiApState() != enabled) {
-				SetWifiApEnabled(enabled);
-				result = true;
-			}
-
-			return result;
-		}
-
-		/// <summary>
-		/// Get Wifi access point state.
-		/// </summary>
-		/// <returns>Ap Enabled is return true</returns>
-		bool GetWifiApState()
-		{
-			bool result = false;
-
-			try {
-				// 11 = テザリング無効, 13 = テザリング有効	多分
-				var method = mWifiManager.Class.GetDeclaredMethod("getWifiApState");
-				method.Accessible = true;
-				int state = (int)method.Invoke(mWifiManager);
-				if(state == 13) {
-					result = true;
-				}
-//				Android.Util.Log.Info("TetheringTest", method.Invoke(mWifiManager).ToString());
-			}
-			catch(Exception e) {
-				Android.Util.Log.Error("Error", e.ToString());
-			}
-
-			return result;
-		}
-
-		/// <summary>
-		/// Set Wifi access point enabled.
-		/// </summary>
-		/// <param name="enabled"></param>
-		void SetWifiApEnabled(bool enabled)
-		{
-			try {
-				var method = mWifiManager.Class.GetDeclaredMethod("setWifiApEnabled", new WifiConfiguration().Class, Java.Lang.Boolean.Type);
-				method.Accessible = true;
-				method.Invoke(mWifiManager, null, enabled);
-			}
-			catch(Exception e) {
-				Android.Util.Log.Error("Error", e.ToString());
-			}
-		}
 
 		/// <summary>
 		/// Toggle mobile data switch
@@ -410,6 +325,8 @@ namespace NetworkDeviceSwitch
 
 			return result;
 		}
+
+		#endregion	// Private Method
 
 
 	}

@@ -17,11 +17,15 @@ namespace NetworkDeviceSwitch
 //	[IntentFilter(new[] { MainActivity.CONNECTIVITY_CHANGE })]
 	public class NetworkStateReceiver : BroadcastReceiver
 	{
-		MainActivity		mParent = null;
+//		MainActivity		mParent = null;
+
+		Application			_Application = null;
 
 		ConnectivityManager	mConnectivityManager = null;
 
 		WifiManager			mWifiManager = null;
+
+		TextView			_StatusView = null;
 
 
 		/// <summary>
@@ -29,11 +33,13 @@ namespace NetworkDeviceSwitch
 		/// </summary>
 		public NetworkStateReceiver(MainActivity parent)
 		{
-			mParent = parent;
+			_Application = parent.Application;
 
-			mConnectivityManager = (ConnectivityManager)mParent.GetSystemService(Context.ConnectivityService);
+			mConnectivityManager = (ConnectivityManager)parent.GetSystemService(Context.ConnectivityService);
 
-			mWifiManager = (WifiManager)mParent.GetSystemService(Context.WifiService);
+			mWifiManager = (WifiManager)parent.GetSystemService(Context.WifiService);
+
+			_StatusView = parent.FindViewById<TextView>(Resource.Id.StatusView);
 		}
 
 		/// <summary>
@@ -58,27 +64,27 @@ namespace NetworkDeviceSwitch
 		/// </summary>
 		void CheckNetworkState()
 		{
-			mParent.StatusView.Text = "";
+			_StatusView.Text = "";
 
 			NetworkInfo activeNetworkInfo = mConnectivityManager.ActiveNetworkInfo;
 
 			bool isOnline = (activeNetworkInfo != null) && activeNetworkInfo.IsConnected;
 
-			mParent.StatusView.Text += string.Format("NetworkState : {0}\n", (isOnline ? "Online" : "Offline"));
+			_StatusView.Text += string.Format("NetworkState : {0}\n", (isOnline ? "Online" : "Offline"));
 
 			if(isOnline) {
-				mParent.StatusView.Text += string.Format("ConnectType : {0}\n", activeNetworkInfo.TypeName);
+				_StatusView.Text += string.Format("ConnectType : {0}\n", activeNetworkInfo.TypeName);
 
 				switch(activeNetworkInfo.Type) {
 				case ConnectivityType.Wifi:
 					WifiInfo info = mWifiManager.ConnectionInfo;
-					mParent.StatusView.Text += string.Format("BSSID : {0}\n", info.BSSID);
-					mParent.StatusView.Text += string.Format("SSID : {0}\n", info.SSID);
+					_StatusView.Text += string.Format("BSSID : {0}\n", info.BSSID);
+					_StatusView.Text += string.Format("SSID : {0}\n", info.SSID);
 
 					byte[] byteArray = BitConverter.GetBytes(info.IpAddress);
 					Java.Net.InetAddress inetAddress = Java.Net.InetAddress.GetByAddress(byteArray);
 					string ipaddress = inetAddress.HostAddress;
-					mParent.StatusView.Text += string.Format("IpAddress : {0}\n", ipaddress);
+					_StatusView.Text += string.Format("IpAddress : {0}\n", ipaddress);
 					break;
 				case ConnectivityType.Mobile:
 					break;
@@ -124,7 +130,7 @@ namespace NetworkDeviceSwitch
 			if(candidacy != null) {
 				// すでにどこかと接続中だった場合の切断処理入れてないけど問題ないか？
 				mWifiManager.EnableNetwork(candidacy.NetworkId, true);
-				Toast.MakeText(mParent, "Wifi Connecting. SSID = " + candidacy.Ssid, ToastLength.Long).Show();
+				Toast.MakeText(_Application, "Wifi Connecting. SSID = " + candidacy.Ssid, ToastLength.Long).Show();
 			}
 		}
 	}
