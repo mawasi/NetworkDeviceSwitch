@@ -64,7 +64,6 @@
     <Compile Include="NetworkStateReceiver.cs" />
     <Compile Include="Resources\Resource.Designer.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="TetheringController.cs" />
     <Compile Include="WifiController.cs" />
   </ItemGroup>
   <ItemGroup>

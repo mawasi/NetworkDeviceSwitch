@@ -52,11 +52,6 @@ namespace NetworkDeviceSwitch
 		/// </summary>
 		WifiController			_WifiController = null;
 
-		/// <summary>
-		/// Tethering Controller
-		/// </summary>
-		TetheringController		_TetheringController = null;
-
 		#endregion	// Field
 
 		#region Property
@@ -115,10 +110,7 @@ namespace NetworkDeviceSwitch
 
 
 			// Wifi制御クラス生成
-			_WifiController = new WifiController(this, WifiSwitch, mWifiManager);
-
-			// テザリング制御クラス生成
-			_TetheringController = new TetheringController(this, TetheringSwitch, mWifiManager);
+			_WifiController = new WifiController(this, mWifiManager, WifiSwitch, TetheringSwitch);
 
 
 		}
@@ -145,9 +137,6 @@ namespace NetworkDeviceSwitch
 		{
 			// Wifi コントローラ初期化
 			_WifiController.Initialize();
-
-			// Tethering コントローラ初期化
-			_TetheringController.Initialize();
 
 		}
 
