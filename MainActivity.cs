@@ -263,7 +263,7 @@ namespace NetworkDeviceSwitch
 
 			}
 			catch(Exception e) {
-				Android.Util.Log.Error("Error", e.ToString());
+				Console.WriteLine(e.ToString());
 			}
 
 			return result;

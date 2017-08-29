@@ -6,6 +6,7 @@ using Android.Widget;
 using Android.OS;
 using System;
 using System.Collections.Generic;
+using System.Text;
 
 namespace NetworkDeviceSwitch
 {
@@ -65,35 +66,38 @@ namespace NetworkDeviceSwitch
 		/// </summary>
 		void CheckNetworkState()
 		{
-			_StatusView.Text = "";
+//			_StatusView.Text = "";
 
 			NetworkInfo activeNetworkInfo = mConnectivityManager.ActiveNetworkInfo;
 
 			bool isOnline = (activeNetworkInfo != null) && activeNetworkInfo.IsConnected;
 
-			_StatusView.Text += string.Format("SDK Build Version : {0}\n", Build.VERSION.Sdk);
 
-			_StatusView.Text += string.Format("NetworkState : {0}\n", (isOnline ? "Online" : "Offline"));
+			StringBuilder builder = new StringBuilder();
+			builder.AppendFormat("SDK Build Version : {0}\n", Build.VERSION.Sdk);
+			builder.AppendFormat("NetworkState : {0}\n", (isOnline ? "Online" : "Offline"));
 
 			if(isOnline) {
-				_StatusView.Text += string.Format("ConnectType : {0}\n", activeNetworkInfo.TypeName);
+				builder.AppendFormat("ConnectType : {0}\n", activeNetworkInfo.TypeName);
 
 				switch(activeNetworkInfo.Type) {
 				case ConnectivityType.Wifi:
 					WifiInfo info = mWifiManager.ConnectionInfo;
-					_StatusView.Text += string.Format("BSSID : {0}\n", info.BSSID);
-					_StatusView.Text += string.Format("SSID : {0}\n", info.SSID);
+					builder.AppendFormat("BSSID : {0}\n", info.BSSID);
+					builder.AppendFormat("SSID : {0}\n", info.SSID);
 
 					byte[] byteArray = BitConverter.GetBytes(info.IpAddress);
 					Java.Net.InetAddress inetAddress = Java.Net.InetAddress.GetByAddress(byteArray);
 					string ipaddress = inetAddress.HostAddress;
-					_StatusView.Text += string.Format("IpAddress : {0}\n", ipaddress);
+					builder.AppendFormat("IpAddress : {0}\n", ipaddress);
 					break;
 				case ConnectivityType.Mobile:
 					break;
 				default: break;
 				}
 			}
+
+			_StatusView.Text = builder.ToString();
 		}
 
 
