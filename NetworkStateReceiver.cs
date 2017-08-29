@@ -3,6 +3,7 @@ using Android.Net.Wifi;
 using Android.Net;
 using Android.App;
 using Android.Widget;
+using Android.OS;
 using System;
 using System.Collections.Generic;
 
@@ -69,6 +70,8 @@ namespace NetworkDeviceSwitch
 			NetworkInfo activeNetworkInfo = mConnectivityManager.ActiveNetworkInfo;
 
 			bool isOnline = (activeNetworkInfo != null) && activeNetworkInfo.IsConnected;
+
+			_StatusView.Text += string.Format("SDK Build Version : {0}\n", Build.VERSION.Sdk);
 
 			_StatusView.Text += string.Format("NetworkState : {0}\n", (isOnline ? "Online" : "Offline"));
 

@@ -99,6 +99,12 @@ namespace NetworkDeviceSwitch
 			GatherSystemService();
 
 	//		mConnectivityManager.StopUsingNetworkFeature(ConnectivityType.Mobile, "");
+/*
+			if(Build.VERSION.SdkInt >= BuildVersionCodes.Honeycomb) {
+				Android.Util.TypedValue outValue = new Android.Util.TypedValue();
+				Theme.ResolveAttribute(Android.Resource.Attribute.SelectableItemBackground);
+			}
+*/
 
 			// このActivityの間だけブロードキャストされればいいので以下の方法で登録する
 			// 通信状況取得用レシーバー登録
@@ -257,7 +263,7 @@ namespace NetworkDeviceSwitch
 
 			}
 			catch(Exception e) {
-				
+				Android.Util.Log.Error("Error", e.ToString());
 			}
 
 			return result;
