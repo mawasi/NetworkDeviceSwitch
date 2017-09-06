@@ -122,11 +122,19 @@ namespace NetworkDeviceSwitch
 				_WifiSwitch.Checked = true;
 			}
 			// Tethering機能が有効ならスイッチをON. Wifi機能とは排他的関係
-			if(GetWifiApState() == WifiAPState.Enabled) {
+			int wifiApState = GetWifiApState();
+			_TetheringSwitch.Enabled = true;	// 一旦有効にしておく
+			if (wifiApState == WifiAPState.Enabled) {
 				_TetheringSwitch.Checked = true;
 			}
 			else {
-				_TetheringSwitch.Checked = false;
+				if(wifiApState == WifiAPState.Failed) {
+					// ステートが失敗ならviewを無効化しておく
+					_TetheringSwitch.Enabled = false;
+				}
+				else {
+					_TetheringSwitch.Checked = false;
+				}
 			}
 		}
 
