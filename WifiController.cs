@@ -394,11 +394,10 @@ namespace NetworkDeviceSwitch
 			}
 			catch(Exception e) {
 				Android.Util.Log.Error("Error", e.ToString());
-			}
-			finally {
 				// Treat as Fail.
 				state = WifiAPState.Failed;
 			}
+			finally {}
 
 			return state;
 		}
