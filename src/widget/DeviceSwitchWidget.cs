@@ -5,11 +5,9 @@ using System.Text;
 
 using Android.App;
 using Android.Content;
-using Android.OS;
-using Android.Runtime;
-using Android.Views;
 using Android.Widget;
 using Android.Appwidget;
+using Android.Net.Wifi;
 
 namespace NetworkDeviceSwitch
 {
@@ -20,7 +18,7 @@ namespace NetworkDeviceSwitch
 		/// ウィジェットメイン
 		/// </summary>
 		[BroadcastReceiver(Label = "@string/WidgetName")]
-		[IntentFilter(new string[] { AppWidgetManager.ActionAppwidgetUpdate })]
+		[IntentFilter(new string[] { AppWidgetManager.ActionAppwidgetUpdate, MainActivity.CONNECTIVITY_CHANGE, MainActivity.SCAN_RESULTS, MainActivity.WIFI_STATE_CHANGE })]
 		[MetaData("android.appwidget.provider", Resource = "@xml/widgetdefine")]    // ファイル名大文字でも、指定は小文字にしないとだめみたい
 		class DeviceSwitchWidget : AppWidgetProvider
 		{
@@ -60,6 +58,24 @@ namespace NetworkDeviceSwitch
 			public override void OnReceive(Context context, Intent intent)
 			{
 				base.OnReceive(context, intent);
+
+				if(intent.Action.Equals(MainActivity.WIFI_STATE_CHANGE)){
+					var wifiManager = (WifiManager)context.GetSystemService(Context.WifiService);
+					RemoteViews remoteViews = new RemoteViews(context.PackageName, Resource.Layout.WidgetLayout);
+
+					if (wifiManager.IsWifiEnabled){
+						remoteViews.SetImageViewResource(Resource.Id.WiFiButton, Resource.Drawable.wifi_button_on);
+						Android.Util.Log.Info("WidgetStateReceiver", "Wifi Enabled.");
+					}
+					else{
+						remoteViews.SetImageViewResource(Resource.Id.WiFiButton, Resource.Drawable.wifi_button_off);
+						Android.Util.Log.Info("WidgetStateReceiver", "Wifi Disabled.");
+					}
+
+					ComponentName widget = new ComponentName(context, Java.Lang.Class.FromType(typeof(DeviceSwitchWidget)).Name);
+					AppWidgetManager manager = AppWidgetManager.GetInstance(context);
+					manager.UpdateAppWidget(widget, remoteViews);
+				}
 			}
 
 			/// <summary>
