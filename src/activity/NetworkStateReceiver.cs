@@ -15,8 +15,8 @@ namespace NetworkDeviceSwitch
 	/// 以下の登録方法はアプリがバックグラウンドにいる間もブロードキャストされるので
 	/// 今回はそこまで必要ないのでActivity内でインスタンス化して登録する
 	/// </summary>
-//	[BroadcastReceiver]
-//	[IntentFilter(new[] { MainActivity.CONNECTIVITY_CHANGE })]
+//	[BroadcastReceiver(Enabled=true, Exported=false)]
+//	[IntentFilter(new[] { MainActivity.CONNECTIVITY_CHANGE, MainActivity.SCAN_RESULTS })]
 	public class NetworkStateReceiver : BroadcastReceiver
 	{
 //		MainActivity		mParent = null;
@@ -29,6 +29,7 @@ namespace NetworkDeviceSwitch
 
 		TextView			_StatusView = null;
 
+//		public NetworkStateReceiver() { }
 
 		/// <summary>
 		/// コンストラクタ
@@ -70,7 +71,7 @@ namespace NetworkDeviceSwitch
 
 			NetworkInfo activeNetworkInfo = mConnectivityManager.ActiveNetworkInfo;
 
-			bool isOnline = (activeNetworkInfo != null) && activeNetworkInfo.IsConnected;
+			bool isOnline = activeNetworkInfo?.IsConnected ?? false;
 
 
 			StringBuilder builder = new StringBuilder();

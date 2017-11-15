@@ -27,7 +27,9 @@ namespace NetworkDeviceSwitch
 
 		public const string PhoneStateChanged = TelephonyManager.ActionPhoneStateChanged;
 
-		#endregion	// Definition
+		public const string WIFI_STATE_CHANGE = WifiManager.WifiStateChangedAction;
+
+		#endregion  // Definition
 
 
 		#region Field
@@ -105,7 +107,7 @@ namespace NetworkDeviceSwitch
 				Theme.ResolveAttribute(Android.Resource.Attribute.SelectableItemBackground);
 			}
 */
-
+#if true
 			// このActivityの間だけブロードキャストされればいいので以下の方法で登録する
 			// 通信状況取得用レシーバー登録
 			var NetintentFilter = new IntentFilter();
@@ -113,7 +115,9 @@ namespace NetworkDeviceSwitch
 			NetintentFilter.AddAction(SCAN_RESULTS);
 			NetworkStateReceiver NetStateReceiver = new NetworkStateReceiver(this);
 			RegisterReceiver(NetStateReceiver, NetintentFilter);
-
+#else
+	//		NetworkStateReceiver NetStateReceiver = new NetworkStateReceiver(this);
+#endif
 
 			// Wifi制御クラス生成
 			_WifiController = new WifiController(this, mWifiManager, WifiSwitch, TetheringSwitch);

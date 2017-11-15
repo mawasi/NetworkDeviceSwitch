@@ -1,0 +1,37 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!-- ウィジェット用のレイアウト定義ファイル -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget"
+	android:orientation="horizontal"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+	android:background="#a0aaaaaa"
+    android:focusable="true">
+	<ImageButton
+        android:id="@+id/WiFiButton"
+        android:layout_width="80dp"
+        android:layout_height="80dp"
+		android:background="@null"
+		android:src="@drawable/wifi_button_off" />
+	<!--
+        android:src="@drawable/widget_button"
+
+        android:layout_alignParentRight="true"
+
+		android:scaleType="fitCenter"
+		android:background="@null"
+		android:src="@drawable/wifi_button_off"
+-->
+	<ImageButton
+        android:id="@+id/TetheringButton"
+        android:layout_width="80dp"
+        android:layout_height="80dp"
+		android:background="@null"
+		android:src="@drawable/ap_button_off" />
+	<!--
+		↓これを設定することでバックグラウンドをなくせる
+		android:background="@null"
+
+        android:src="@drawable/widget_button" />
+-->
+</LinearLayout>

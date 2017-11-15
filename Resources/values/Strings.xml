@@ -5,4 +5,5 @@
 	<string name="WifiSwitchView">Wifi Enabled</string>
 	<string name="TetheringSwitchView">Tethering Enabled</string>
 	<string name="StatusView">Status</string>
+  <string name="WidgetName">Network Device Switch</string>
 </resources>
