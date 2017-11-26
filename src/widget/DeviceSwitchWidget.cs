@@ -42,6 +42,7 @@ namespace NetworkDeviceSwitch
 			public override void OnEnabled(Context context)
 			{
 				base.OnEnabled(context);
+				Android.Util.Log.Info("WidgetStateReceiver", "WidgetStateReceiver::OnEnabled()");
 			}
 
 
@@ -59,17 +60,16 @@ namespace NetworkDeviceSwitch
 			{
 				base.OnReceive(context, intent);
 
+				// Wifiのステートの切り替わりでボタンのON,OFF表示切り替える
 				if(intent.Action.Equals(MainActivity.WIFI_STATE_CHANGE)){
 					var wifiManager = (WifiManager)context.GetSystemService(Context.WifiService);
 					RemoteViews remoteViews = new RemoteViews(context.PackageName, Resource.Layout.WidgetLayout);
 
 					if (wifiManager.IsWifiEnabled){
 						remoteViews.SetImageViewResource(Resource.Id.WiFiButton, Resource.Drawable.wifi_button_on);
-						Android.Util.Log.Info("WidgetStateReceiver", "Wifi Enabled.");
 					}
 					else{
 						remoteViews.SetImageViewResource(Resource.Id.WiFiButton, Resource.Drawable.wifi_button_off);
-						Android.Util.Log.Info("WidgetStateReceiver", "Wifi Disabled.");
 					}
 
 					ComponentName widget = new ComponentName(context, Java.Lang.Class.FromType(typeof(DeviceSwitchWidget)).Name);
@@ -86,6 +86,7 @@ namespace NetworkDeviceSwitch
 			public override void OnDisabled(Context context)
 			{
 				base.OnDisabled(context);
+				Android.Util.Log.Info("WidgetStateReceiver", "WidgetStateReceiver::OnDisabled()");
 			}
 		}
 	}

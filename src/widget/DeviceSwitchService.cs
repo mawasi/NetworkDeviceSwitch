@@ -17,6 +17,11 @@ namespace NetworkDeviceSwitch
 
 	namespace Widget
 	{
+
+
+		/// <summary>
+		/// Wifi,テザリングスイッチを押したときの各処理実装
+		/// </summary>
 		[IntentFilter(new string[] { ACTION_TOGGLE_WIFI })]
 		[Service]   // AndroidManifestに追記する代わりにAttributeを設定する(xamarin)
 		class DeviceSwitchService : Service
@@ -72,20 +77,21 @@ namespace NetworkDeviceSwitch
 						ToggleWifi();
 					}
 				}
-#if true
+
 				if (_WifiManager.IsWifiEnabled){
 					remoteViews.SetImageViewResource(Resource.Id.WiFiButton, Resource.Drawable.wifi_button_on);
-					Android.Util.Log.Info("DeviceSwitchService", "Wifi Enabled.");
 				}
 				else{
 					remoteViews.SetImageViewResource(Resource.Id.WiFiButton, Resource.Drawable.wifi_button_off);
-					Android.Util.Log.Info("DeviceSwitchService", "Wifi Disabled.");
 				}
-#endif
+
 				return remoteViews;
 			}
 
 
+			/// <summary>
+			/// WifiのON,OFF切り替え
+			/// </summary>
 			void ToggleWifi()
 			{
 				if (_WifiManager.IsWifiEnabled)

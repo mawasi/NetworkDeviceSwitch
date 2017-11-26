@@ -173,23 +173,6 @@ namespace NetworkDeviceSwitch
 			return result;
 		}
 
-		/// <summary>
-		/// Toggle Wifi and Check Wifi Enabled.
-		/// </summary>
-		/// <param name="enabled"></param>
-		/// <returns></returns>
-		bool ToggleWifiAsync(bool enabled)
-		{
-			bool result = false;
-
-			result = ToggleWifi(enabled);
-
-			while(true) {
-				if(_WifiManager.IsWifiEnabled == enabled) {
-					return result;
-				}
-			}
-		} 
 
 		#endregion // WifiMethod
 
@@ -212,7 +195,8 @@ namespace NetworkDeviceSwitch
 		/// <param name="e"></param>
 		async void OnTetheringSwitchCheckedChange(object sender, CompoundButton.CheckedChangeEventArgs e)
 		{
-
+			int threadID = System.Threading.Thread.CurrentThread.ManagedThreadId;
+			Android.Util.Log.Info("Info", "WifiController.OnTetheringSwitchCheckedChange({0}) ThreadID = {1}", e.IsChecked, threadID);
 #if false
 			GetWifiApState();
 
@@ -243,6 +227,8 @@ namespace NetworkDeviceSwitch
 				}
 			}
 #else
+			// 処理終わるまで再度スイッチ押せないように無効化する
+			_TetheringSwitch.Enabled = false;
 
 			int apstate = GetWifiApState();
 			if(apstate == WifiAPState.Failed) {
@@ -251,14 +237,20 @@ namespace NetworkDeviceSwitch
 				return;
 			}
 
+			// テザリング機能の有効無効を切り替える
 			bool result = await Task.Run(() => ToggleWifiApAsync(e.IsChecked));
-			if(result) {
+
+			// 処理が終わったら有効化
+			_TetheringSwitch.Enabled = true;
+
+			if (result) {
 				var message = e.IsChecked == true ? "WifiAp Enabled." : "WifiAp Disabled.";
+
 				Toast.MakeText(_Application, message, ToastLength.Short).Show();
 			}
 			else {
 				var message = e.IsChecked == true ? "WifiAp Enabling is fail." : "WifiAp Disabling is fail.";
-				_TetheringSwitch.Checked = e.IsChecked == true ? false : true;
+	//			_TetheringSwitch.Checked = e.IsChecked == true ? false : true;
 
 				Toast.MakeText(_Application, message, ToastLength.Short).Show();
 			}
@@ -276,44 +268,68 @@ namespace NetworkDeviceSwitch
 		{
 			bool result = false;
 
+			int threadID = System.Threading.Thread.CurrentThread.ManagedThreadId;
+			Android.Util.Log.Info("Info", "WifiController.ToggleWifiApAsync({0}) ThreadID = {1}", enabled, threadID);
+
+
 			// Enablingが完了したかチェック
-			Func<int> EnablingCheck = () =>
+			// todo: タイムアウト処理作る
+			Func<Task<int>> EnablingCheck = async () =>
 			{
 				while(true) {
 					int value = GetWifiApState();
-					if(value != WifiAPState.Enabling) {
+//					if(value != WifiAPState.Enabling) {
+					if(value == WifiAPState.Enabled) {
 						return value;
 					}
+					await Task.Delay(100);	// 100ミリ待機
 				}
 			};
 
 			// Disablingが完了したかチェック
-			Func<int> DisablingCheck = () =>
+			// todo: タイムアウト処理作る
+			Func<Task<int>> DisablingCheck = async () =>
 			{
 				while(true) {
 					int value = GetWifiApState();
-					if(value != WifiAPState.Disabling) {
+					if(value == WifiAPState.Disabled) {
 						return value;
+					}
+					await Task.Delay(100);	// 100ミリ待機
+				}
+			};
+
+			// Wifi 有効(無効)化待ち
+			// todo: タイムアウト処理作る
+			Action<bool> WaitForWifiEnabed = (bool flag) =>
+			{
+				while (true){
+					if (_WifiManager.IsWifiEnabled == flag){
+						return;
 					}
 				}
 			};
 
 
-			if(enabled) {				// 有効化処理
-				int ApState =  GetWifiApState();
+			int ApState = GetWifiApState();
+
+			if (enabled) {				// 有効化処理
 				switch(ApState) {	// 現在のテザリングの状態によって処理を分ける
 				case WifiAPState.Enabled:
 					result = true;
 					break;
 				case WifiAPState.Disabled:
 					// Switch Wifi Disabled
-					await Task.Run(() => ToggleWifiAsync(!enabled));
+					ToggleWifi(!enabled);
+
+					// Waiting for Wifi Disabled.
+					await Task.Run(() => WaitForWifiEnabed(!enabled));
 
 					// Set WifiAp
 					SetWifiApEnabled(enabled);
 
 					// テザリングの有効化チェック
-					int state = await Task.Run(EnablingCheck);
+					int state = await EnablingCheck();
 					if(state == WifiAPState.Enabled) {
 						result = true;
 					}
@@ -328,26 +344,27 @@ namespace NetworkDeviceSwitch
 
 			}
 			else {				// 無効化処理
-				int ApState =  GetWifiApState();
 				switch(ApState) {
 				case WifiAPState.Enabled:
 					// Set WifiAp
 					SetWifiApEnabled(enabled);
 
-					// テザリングの有効化チェック
-					int state = await Task.Run(DisablingCheck);
+					// テザリングの無効化チェック
+					int state = await DisablingCheck();
 					if(state == WifiAPState.Disabled) {
 						result = true;
 					}
 
 					// Switch Wifi Enabled
-					await Task.Run(() => ToggleWifiAsync(!enabled));
+//					await Task.Run(() => ToggleWifiAsync(!enabled));
+					ToggleWifi(!enabled);	// Wifi の有効化リクエストだけしてあとはほっといてOK
 
-					break;
-				case WifiAPState.Failed:
+
 					break;
 				case WifiAPState.Disabled:
 					result = true;
+					break;
+				case WifiAPState.Failed:
 					break;
 				default:
 					Android.Util.Log.Error("Error", "Unprocessed WifiAPState Switch. WifiAPState = " + ApState.ToString());
@@ -390,7 +407,7 @@ namespace NetworkDeviceSwitch
 				var method = _WifiManager.Class.GetDeclaredMethod("getWifiApState");
 				method.Accessible = true;
 				state = (int)method.Invoke(_WifiManager);
-				Android.Util.Log.Info("WifiApState = ", state.ToString());
+				Android.Util.Log.Info("Info", "WifiApState = {0}", state);
 			}
 			catch(Exception e) {
 				Android.Util.Log.Error("Error", e.ToString());
