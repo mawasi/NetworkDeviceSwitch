@@ -1,4 +1,6 @@
-﻿using Android.Content;
+﻿#if false
+
+using Android.Content;
 using Android.Net.Wifi;
 using Android.Net;
 using Android.App;
@@ -144,3 +146,6 @@ namespace NetworkDeviceSwitch
 	}
 
 }
+
+
+#endif

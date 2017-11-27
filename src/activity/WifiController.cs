@@ -5,10 +5,9 @@ using System.Text;
 using System.Threading.Tasks;
 
 using Android.App;
-using Android.Content;
 using Android.OS;
-using Android.Runtime;
-using Android.Views;
+using Android.Content;
+using Android.Net;
 using Android.Widget;
 using Android.Net.Wifi;
 
@@ -17,7 +16,7 @@ namespace NetworkDeviceSwitch
 	/// <summary>
 	/// Wifiデバイスモデルのコントローラ
 	/// </summary>
-	class WifiController
+	class WifiController : BroadcastReceiver
 	{
 
 		#region Definition
@@ -68,6 +67,11 @@ namespace NetworkDeviceSwitch
 		WifiManager		_WifiManager = null;
 
 		/// <summary>
+		/// ConnectivityManager
+		/// </summary>
+		ConnectivityManager _ConnectivityManager = null;
+
+		/// <summary>
 		/// Wifi Switch View
 		/// </summary>
 		Switch			_WifiSwitch = null;
@@ -77,7 +81,12 @@ namespace NetworkDeviceSwitch
 		/// </summary>
 		Switch			_TetheringSwitch = null;
 
-		#endregion	// Field
+		/// <summary>
+		/// Wifi Status View
+		/// </summary>
+		TextView		_StatusView = null;
+
+		#endregion   // Field
 
 
 		#region BaseMethod
@@ -92,23 +101,41 @@ namespace NetworkDeviceSwitch
 		/// Constructor
 		/// </summary>
 		/// <param name="activity"></param>
-		/// <param name="wifi"></param>
-		/// <param name="wifiSwitch"></param>
-		/// <param name="tetheringSwitch"></param>
-		public WifiController(Activity activity, WifiManager wifi, Switch wifiSwitch, Switch tetheringSwitch)
+		public WifiController(Activity activity)
 		{
 			_Application = activity.Application;
 
-			_WifiManager = wifi;
+			_WifiManager = (WifiManager)activity.GetSystemService(Context.WifiService);
 
-			_WifiSwitch = wifiSwitch;
+			_ConnectivityManager = (ConnectivityManager)activity.GetSystemService(Context.ConnectivityService);
+
+			_WifiSwitch = activity.FindViewById<Switch>(Resource.Id.WifiSwitch);
 			_WifiSwitch.CheckedChange += OnWifiSwitchCheckedChange;
 
-			_TetheringSwitch = tetheringSwitch;
+			_TetheringSwitch = activity.FindViewById<Switch>(Resource.Id.TetheringSwitch);
 			_TetheringSwitch.CheckedChange += OnTetheringSwitchCheckedChange;
+
+			_StatusView = activity.FindViewById<TextView>(Resource.Id.StatusView);
+			_StatusView.Text = "";
 		}
 
-		#endregion	// BaseMethod
+		/// <summary>
+		/// ブロードキャスト受け取り
+		/// </summary>
+		/// <param name="context"></param>
+		/// <param name="intent"></param>
+		public override void OnReceive(Context context, Intent intent)
+		{
+			Android.Util.Log.Info("Info", "Wifi 関連のブロードキャストを受け取りました. Action = {0} ", intent.Action);
+			// 別のアプリからフォーカス戻したときも以下のアクションでレシーブされる。なんでだ
+			if(intent.Action == MainActivity.SCAN_RESULTS) {
+				// 最寄りの登録済みAPに接続を試みる
+				TryConnectAP();
+			}
+			CheckNetworkState();
+		}
+
+		#endregion  // BaseMethod
 
 		#region Method
 
@@ -117,6 +144,8 @@ namespace NetworkDeviceSwitch
 		/// </summary>
 		public void Initialize()
 		{
+			_StatusView.Text = "";
+
 			// Wifi機能が有効ならスイッチをONにしておく
 			if(_WifiManager.IsWifiEnabled) {
 				_WifiSwitch.Checked = true;
@@ -171,6 +200,83 @@ namespace NetworkDeviceSwitch
 			}
 
 			return result;
+		}
+
+		/// <summary>
+		/// 通信情報確認
+		/// </summary>
+		void CheckNetworkState()
+		{
+			NetworkInfo activeNetworkInfo = _ConnectivityManager.ActiveNetworkInfo;
+
+			bool isOnline = activeNetworkInfo?.IsConnected ?? false;
+
+
+			StringBuilder builder = new StringBuilder();
+			builder.AppendFormat("SDK Build Version : {0}\n", Build.VERSION.Sdk);
+			builder.AppendFormat("NetworkState : {0}\n", (isOnline ? "Online" : "Offline"));
+
+			if(isOnline) {
+				builder.AppendFormat("ConnectType : {0}\n", activeNetworkInfo.TypeName);
+
+				switch(activeNetworkInfo.Type) {
+				case ConnectivityType.Wifi:
+					WifiInfo info = _WifiManager.ConnectionInfo;
+					builder.AppendFormat("BSSID : {0}\n", info.BSSID);
+					builder.AppendFormat("SSID : {0}\n", info.SSID);
+
+					byte[] byteArray = BitConverter.GetBytes(info.IpAddress);
+					Java.Net.InetAddress inetAddress = Java.Net.InetAddress.GetByAddress(byteArray);
+					string ipaddress = inetAddress.HostAddress;
+					builder.AppendFormat("IpAddress : {0}\n", ipaddress);
+					break;
+				case ConnectivityType.Mobile:
+					break;
+				default: break;
+				}
+			}
+
+			_StatusView.Text = builder.ToString();
+		}
+
+		/// <summary>
+		/// Try connect to Access Point.
+		/// </summary>
+		void TryConnectAP()
+		{
+			// APスキャン結果
+			IList<ScanResult> results = _WifiManager.ScanResults;
+
+			Android.Util.Log.Info("TryConnectAP", "Scan Resut Start");
+			foreach(var result in results) {
+				Android.Util.Log.Info("TryConnectAP", "		ssid {0}", result.Ssid);
+			}
+			Android.Util.Log.Info("TryConnectAP", "Scan Resut End.");
+
+			// 端末に保存されているネットワーク設定リスト
+			var ConfiguredNetworks = _WifiManager.ConfiguredNetworks;
+
+			// スキャンしたAPのSSIDと設定リストに登録されてるSSIDで一致するものがあり
+			// なおかつその中で一番Frequencyが高いやつに接続する
+			WifiConfiguration candidacy = null;
+			int frequency = 0;
+			foreach(var Config in ConfiguredNetworks) {
+				foreach(var result in results) {
+					var ssid = Config.Ssid.Replace("\"", ""); // 接頭、接尾の["]が邪魔なので削除する
+					if(ssid.Equals(result.Ssid)) {
+						if(frequency < result.Frequency) {
+							candidacy = Config;	// 接続候補
+							frequency = result.Frequency;
+						}
+					}
+				}
+			}
+
+			if(candidacy != null) {
+				// すでにどこかと接続中だった場合の切断処理入れてないけど問題ないか？
+				_WifiManager.EnableNetwork(candidacy.NetworkId, true);
+				Toast.MakeText(_Application, "Wifi Connecting. SSID = " + candidacy.Ssid, ToastLength.Long).Show();
+			}
 		}
 
 

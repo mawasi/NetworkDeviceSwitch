@@ -108,6 +108,7 @@ namespace NetworkDeviceSwitch
 			}
 */
 
+#if false
 			// このActivityの間だけブロードキャストされればいいので以下の方法で登録する
 			// 通信状況取得用レシーバー登録
 			var NetintentFilter = new IntentFilter();
@@ -115,10 +116,15 @@ namespace NetworkDeviceSwitch
 			NetintentFilter.AddAction(SCAN_RESULTS);
 			NetworkStateReceiver NetStateReceiver = new NetworkStateReceiver(this);
 			RegisterReceiver(NetStateReceiver, NetintentFilter);
-
+#endif
 
 			// Wifi制御クラス生成
-			_WifiController = new WifiController(this, mWifiManager, WifiSwitch, TetheringSwitch);
+			// このActivityの間だけブロードキャストされればいいので以下の方法で登録する
+			var NetintentFilter = new IntentFilter();
+			NetintentFilter.AddAction(CONNECTIVITY_CHANGE);
+			NetintentFilter.AddAction(SCAN_RESULTS);
+			_WifiController = new WifiController(this);
+			RegisterReceiver(_WifiController, NetintentFilter);
 
 
 		}
