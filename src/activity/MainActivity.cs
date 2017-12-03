@@ -108,6 +108,26 @@ namespace NetworkDeviceSwitch
 			}
 */
 
+
+
+		}
+
+		/// <summary>
+		/// 
+		/// </summary>
+		protected override void OnStart()
+		{
+			base.OnStart();
+
+		}
+
+		/// <summary>
+		/// 
+		/// </summary>
+		protected override void OnResume()
+		{
+			base.OnResume();
+
 #if false
 			// このActivityの間だけブロードキャストされればいいので以下の方法で登録する
 			// 通信状況取得用レシーバー登録
@@ -123,19 +143,26 @@ namespace NetworkDeviceSwitch
 			var NetintentFilter = new IntentFilter();
 			NetintentFilter.AddAction(CONNECTIVITY_CHANGE);
 			NetintentFilter.AddAction(SCAN_RESULTS);
+			NetintentFilter.AddAction(WIFI_STATE_CHANGE);
 			_WifiController = new WifiController(this);
 			RegisterReceiver(_WifiController, NetintentFilter);
 
+			// ビューの初期化
+			InitializeView();
 
 		}
 
-
-		protected override void OnStart()
+		/// <summary>
+		/// 
+		/// </summary>
+		protected override void OnPause()
 		{
-			base.OnStart();
+			base.OnPause();
 
-			// ビューの初期化
-			InitializeView();
+			// レシーバーの登録解除
+			if(_WifiController != null){
+				UnregisterReceiver(_WifiController);
+			}
 		}
 
 

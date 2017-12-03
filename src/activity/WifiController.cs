@@ -127,12 +127,35 @@ namespace NetworkDeviceSwitch
 		public override void OnReceive(Context context, Intent intent)
 		{
 			Android.Util.Log.Info("Info", "Wifi 関連のブロードキャストを受け取りました. Action = {0} ", intent.Action);
-			// 別のアプリからフォーカス戻したときも以下のアクションでレシーブされる。なんでだ
+			// 別のアプリからフォーカス戻したときも以下のアクションでレシーブされる。
 			if(intent.Action == MainActivity.SCAN_RESULTS) {
 				// 最寄りの登録済みAPに接続を試みる
 				TryConnectAP();
 			}
-			CheckNetworkState();
+
+			if(intent.Action == MainActivity.WIFI_STATE_CHANGE){
+				Android.Util.Log.Info("Info", $"IsWifiEnabled = {_WifiManager.IsWifiEnabled} : WifiState = {_WifiManager.WifiState.ToString()} : WifiSwitch = {_WifiSwitch.Checked} ");
+				// Wifiデバイスの状態とスイッチの状態が一致してない場合に、デバイスの状態にスイッチを合わせる
+				if((_WifiManager.WifiState == WifiState.Disabled) || (_WifiManager.WifiState == WifiState.Enabled)){
+					if(_WifiSwitch.Checked != _WifiManager.IsWifiEnabled){
+						_WifiSwitch.Checked = _WifiManager.IsWifiEnabled;
+					}
+				}
+			}
+
+
+			if(intent.Action == MainActivity.CONNECTIVITY_CHANGE){
+				CheckNetworkState();
+#if false
+				// テザリングの状態がDisabledならスイッチの状態をOFFにする	
+				if(GetWifiApState() == WifiAPState.Disabled){
+					if(_TetheringSwitch.Checked){
+						_TetheringSwitch.Checked = false;
+					}
+				}
+#endif
+			}
+
 		}
 
 		#endregion  // BaseMethod
@@ -168,6 +191,34 @@ namespace NetworkDeviceSwitch
 		}
 
 
+		/// <summary>
+		/// 何かしらのネットワークに接続されているかどうか
+		/// </summary>
+		/// <returns></returns>
+		public bool IsOnline()
+		{
+			bool result;
+
+			// 機内モード等で、いずれのネットワークも見つからなかった場合、 ActiveNetworkInfo は null を返す。
+			NetworkInfo activeNetworkInfo = _ConnectivityManager.ActiveNetworkInfo;
+
+			result = activeNetworkInfo?.IsConnected ?? false;
+
+			return result;
+		}
+
+
+		/// <summary>
+		/// Enable switch view.
+		/// </summary>
+		/// <param name="enabled"></param>
+		public void EnableSwitchView(bool enabled)
+		{
+			_WifiSwitch.Enabled = enabled;
+			_TetheringSwitch.Enabled = enabled;
+		}
+
+
 		#region WifiMethod
 
 		/// <summary>
@@ -179,10 +230,11 @@ namespace NetworkDeviceSwitch
 		/// <param name="e"></param>
 		void OnWifiSwitchCheckedChange(object sender, CompoundButton.CheckedChangeEventArgs e)
 		{
-			if(ToggleWifi(e.IsChecked)) {
-				var message = e.IsChecked == true ? "Wifi Enabled." : "Wifi Disabled.";
-				Toast.MakeText(_Application, message, ToastLength.Short).Show();
-			}
+			EnableSwitchView(false);
+
+			ToggleWifi(e.IsChecked);
+
+			EnableSwitchView(true);
 		}
 
 
@@ -196,6 +248,9 @@ namespace NetworkDeviceSwitch
 			bool result = false;
 			if(_WifiManager.IsWifiEnabled != enabled) {
 				_WifiManager.SetWifiEnabled(enabled);
+				// ToastはUIスレッド以外で呼び出せないが、ToggleWifi自体がUIスレッド以外で動作することがあるので以下の処理は状況次第で都合悪い
+//				var message = enabled == true ? "Wifi Enabled." : "Wifi Disabled.";
+//				Toast.MakeText(_Application, message, ToastLength.Short).Show();
 				result = true;
 			}
 
@@ -207,9 +262,8 @@ namespace NetworkDeviceSwitch
 		/// </summary>
 		void CheckNetworkState()
 		{
-			NetworkInfo activeNetworkInfo = _ConnectivityManager.ActiveNetworkInfo;
 
-			bool isOnline = activeNetworkInfo?.IsConnected ?? false;
+			bool isOnline = IsOnline();
 
 
 			StringBuilder builder = new StringBuilder();
@@ -217,6 +271,7 @@ namespace NetworkDeviceSwitch
 			builder.AppendFormat("NetworkState : {0}\n", (isOnline ? "Online" : "Offline"));
 
 			if(isOnline) {
+				NetworkInfo activeNetworkInfo = _ConnectivityManager.ActiveNetworkInfo;
 				builder.AppendFormat("ConnectType : {0}\n", activeNetworkInfo.TypeName);
 
 				switch(activeNetworkInfo.Type) {
@@ -247,11 +302,11 @@ namespace NetworkDeviceSwitch
 			// APスキャン結果
 			IList<ScanResult> results = _WifiManager.ScanResults;
 
-			Android.Util.Log.Info("TryConnectAP", "Scan Resut Start");
+			Android.Util.Log.Info("TryConnectAP", "Scan Result Start");
 			foreach(var result in results) {
 				Android.Util.Log.Info("TryConnectAP", "		ssid {0}", result.Ssid);
 			}
-			Android.Util.Log.Info("TryConnectAP", "Scan Resut End.");
+			Android.Util.Log.Info("TryConnectAP", "Scan Result End.");
 
 			// 端末に保存されているネットワーク設定リスト
 			var ConfiguredNetworks = _WifiManager.ConfiguredNetworks;
@@ -333,21 +388,22 @@ namespace NetworkDeviceSwitch
 				}
 			}
 #else
-			// 処理終わるまで再度スイッチ押せないように無効化する
-			_TetheringSwitch.Enabled = false;
 
 			int apstate = GetWifiApState();
 			if(apstate == WifiAPState.Failed) {
-				var message = "This Device is not support WifiAP.";
+				var message = "This Device is not supported WifiAP.";
 				Toast.MakeText(_Application, message, ToastLength.Short).Show();
 				return;
 			}
+
+			// 処理終わるまで再度スイッチ押せないように無効化する
+			EnableSwitchView(false);
 
 			// テザリング機能の有効無効を切り替える
 			bool result = await Task.Run(() => ToggleWifiApAsync(e.IsChecked));
 
 			// 処理が終わったら有効化
-			_TetheringSwitch.Enabled = true;
+			EnableSwitchView(true);
 
 			if (result) {
 				var message = e.IsChecked == true ? "WifiAp Enabled." : "WifiAp Disabled.";
@@ -463,7 +519,7 @@ namespace NetworkDeviceSwitch
 
 					// Switch Wifi Enabled
 //					await Task.Run(() => ToggleWifiAsync(!enabled));
-					ToggleWifi(!enabled);	// Wifi の有効化リクエストだけしてあとはほっといてOK
+//					ToggleWifi(!enabled);	// Wifi の有効化リクエストだけしてあとはほっといてOK
 
 
 					break;
