@@ -130,7 +130,7 @@ namespace NetworkDeviceSwitch
 			// 別のアプリからフォーカス戻したときも以下のアクションでレシーブされる。
 			if(intent.Action == MainActivity.SCAN_RESULTS) {
 				// 最寄りの登録済みAPに接続を試みる
-				TryConnectAP();
+				WifiUtility.TryConnectAP(context);
 			}
 
 			if(intent.Action == MainActivity.WIFI_STATE_CHANGE){
@@ -140,6 +140,9 @@ namespace NetworkDeviceSwitch
 					if(_WifiSwitch.Checked != _WifiManager.IsWifiEnabled){
 						_WifiSwitch.Checked = _WifiManager.IsWifiEnabled;
 					}
+					// ToastはUIスレッド以外で呼び出せない
+					var message = $"Wifi {_WifiManager.WifiState}.";
+					Toast.MakeText(_Application, message, ToastLength.Short).Show();
 				}
 			}
 
@@ -163,7 +166,7 @@ namespace NetworkDeviceSwitch
 		#region Method
 
 		/// <summary>
-		/// 各種初期化
+		/// 各種ビューの初期化
 		/// </summary>
 		public void Initialize()
 		{
@@ -190,24 +193,6 @@ namespace NetworkDeviceSwitch
 			}
 		}
 
-
-		/// <summary>
-		/// 何かしらのネットワークに接続されているかどうか
-		/// </summary>
-		/// <returns></returns>
-		public bool IsOnline()
-		{
-			bool result;
-
-			// 機内モード等で、いずれのネットワークも見つからなかった場合、 ActiveNetworkInfo は null を返す。
-			NetworkInfo activeNetworkInfo = _ConnectivityManager.ActiveNetworkInfo;
-
-			result = activeNetworkInfo?.IsConnected ?? false;
-
-			return result;
-		}
-
-
 		/// <summary>
 		/// Enable switch view.
 		/// </summary>
@@ -232,29 +217,9 @@ namespace NetworkDeviceSwitch
 		{
 			EnableSwitchView(false);
 
-			ToggleWifi(e.IsChecked);
+			WifiUtility.ToggleWifi(_Application, e.IsChecked);
 
 			EnableSwitchView(true);
-		}
-
-
-		/// <summary>
-		/// Toggle Wifi switch
-		/// </summary>
-		/// <param name="enabled"></param>
-		/// <returns></returns>
-		bool ToggleWifi(bool enabled)
-		{
-			bool result = false;
-			if(_WifiManager.IsWifiEnabled != enabled) {
-				_WifiManager.SetWifiEnabled(enabled);
-				// ToastはUIスレッド以外で呼び出せないが、ToggleWifi自体がUIスレッド以外で動作することがあるので以下の処理は状況次第で都合悪い
-//				var message = enabled == true ? "Wifi Enabled." : "Wifi Disabled.";
-//				Toast.MakeText(_Application, message, ToastLength.Short).Show();
-				result = true;
-			}
-
-			return result;
 		}
 
 		/// <summary>
@@ -263,7 +228,7 @@ namespace NetworkDeviceSwitch
 		void CheckNetworkState()
 		{
 
-			bool isOnline = IsOnline();
+			bool isOnline = WifiUtility.IsOnline(_Application);
 
 
 			StringBuilder builder = new StringBuilder();
@@ -292,46 +257,6 @@ namespace NetworkDeviceSwitch
 			}
 
 			_StatusView.Text = builder.ToString();
-		}
-
-		/// <summary>
-		/// Try connect to Access Point.
-		/// </summary>
-		void TryConnectAP()
-		{
-			// APスキャン結果
-			IList<ScanResult> results = _WifiManager.ScanResults;
-
-			Android.Util.Log.Info("TryConnectAP", "Scan Result Start");
-			foreach(var result in results) {
-				Android.Util.Log.Info("TryConnectAP", "		ssid {0}", result.Ssid);
-			}
-			Android.Util.Log.Info("TryConnectAP", "Scan Result End.");
-
-			// 端末に保存されているネットワーク設定リスト
-			var ConfiguredNetworks = _WifiManager.ConfiguredNetworks;
-
-			// スキャンしたAPのSSIDと設定リストに登録されてるSSIDで一致するものがあり
-			// なおかつその中で一番Frequencyが高いやつに接続する
-			WifiConfiguration candidacy = null;
-			int frequency = 0;
-			foreach(var Config in ConfiguredNetworks) {
-				foreach(var result in results) {
-					var ssid = Config.Ssid.Replace("\"", ""); // 接頭、接尾の["]が邪魔なので削除する
-					if(ssid.Equals(result.Ssid)) {
-						if(frequency < result.Frequency) {
-							candidacy = Config;	// 接続候補
-							frequency = result.Frequency;
-						}
-					}
-				}
-			}
-
-			if(candidacy != null) {
-				// すでにどこかと接続中だった場合の切断処理入れてないけど問題ないか？
-				_WifiManager.EnableNetwork(candidacy.NetworkId, true);
-				Toast.MakeText(_Application, "Wifi Connecting. SSID = " + candidacy.Ssid, ToastLength.Long).Show();
-			}
 		}
 
 
@@ -482,7 +407,7 @@ namespace NetworkDeviceSwitch
 					break;
 				case WifiAPState.Disabled:
 					// Switch Wifi Disabled
-					ToggleWifi(!enabled);
+					WifiUtility.ToggleWifi(_Application, !enabled);
 
 					// Waiting for Wifi Disabled.
 					await Task.Run(() => WaitForWifiEnabed(!enabled));

@@ -8,6 +8,7 @@ using Android.Content;
 using Android.Widget;
 using Android.Appwidget;
 using Android.Net.Wifi;
+using Android.Net;
 
 namespace NetworkDeviceSwitch
 {
@@ -65,10 +66,10 @@ namespace NetworkDeviceSwitch
 					var wifiManager = (WifiManager)context.GetSystemService(Context.WifiService);
 					RemoteViews remoteViews = new RemoteViews(context.PackageName, Resource.Layout.WidgetLayout);
 
-					if (wifiManager.IsWifiEnabled){
+					if (wifiManager.WifiState == WifiState.Enabled){
 						remoteViews.SetImageViewResource(Resource.Id.WiFiButton, Resource.Drawable.wifi_button_on);
 					}
-					else{
+					else if(wifiManager.WifiState == WifiState.Disabled){
 						remoteViews.SetImageViewResource(Resource.Id.WiFiButton, Resource.Drawable.wifi_button_off);
 					}
 
