@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 
 using Android.App;
 using Android.Content;
@@ -67,11 +68,12 @@ namespace NetworkDeviceSwitch
 
 				// ボタン押したらwifiスイッチON,OFFする
 				Intent ToggleWifiIntent = new Intent();
-				// ボタンを押したときにこのIntentがブロードキャストされて、それをこのクラスが直接受け取り、OnStartCommandが呼ばれる。
+				// Wifiボタンを押したときにこのクラス宛にIntentブロードキャストして、OnStartCommandが呼ばれる。
 				ToggleWifiIntent.SetAction(ACTION_TOGGLE_WIFI);
 				PendingIntent ToggleWifiPendingIntent = PendingIntent.GetService(this, 0, ToggleWifiIntent, 0);   // サービスクラスへ投げるインテント作成
 				remoteViews.SetOnClickPendingIntent(Resource.Id.WiFiButton, ToggleWifiPendingIntent);
 
+				// 上記Intentを受け取って呼び出された場合、以下を通る
 				if (!string.IsNullOrEmpty(intent.Action)){
 					if (intent.Action.Equals(ACTION_TOGGLE_WIFI)){
 						ToggleWifi();
@@ -104,6 +106,26 @@ namespace NetworkDeviceSwitch
 					_WifiManager.SetWifiEnabled(true);
 		//			Toast.MakeText(this, "Wifi Enabled.", ToastLength.Short).Show();
 				}
+			}
+
+			/// <summary>
+			/// WifiAPのON,OFF切り替え
+			/// </summary>
+			/// <returns></returns>
+			async Task<bool> ToggleWifiApAsync()
+			{
+				int apstate = WifiUtility.GetWifiApState(this);
+				if(apstate == WifiUtility.WifiAPState.Failed) {
+					var message = "This Device is not surpported WifiAP.";
+					Toast.MakeText(this, message, ToastLength.Short).Show();
+					return false;
+				}
+
+				bool result = false;
+
+
+
+				return result;
 			}
 		}
 	}
