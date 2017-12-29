@@ -197,14 +197,7 @@ namespace NetworkDeviceSwitch
 		{
 			EnableSwitchView(false);
 
-			// Wifi有効化する際、WifiApがすでに有効な場合まず、WifiApを無効化する.
-			if(e.IsChecked) {
-				if(WifiUtility.IsWifiApEnabled(_Application)) {
-					await Task.Run(() => WifiUtility.ToggleWifiApAsync(_Application, false));
-				}
-			}
-
-			WifiUtility.ToggleWifi(_Application, e.IsChecked);
+			await Task.Run(() => WifiUtility.ToggleWifiAsync(_Application, e.IsChecked));
 
 			EnableSwitchView(true);
 		}

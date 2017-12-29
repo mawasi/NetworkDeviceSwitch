@@ -19,7 +19,7 @@ namespace NetworkDeviceSwitch
 		/// ウィジェットメイン
 		/// </summary>
 		[BroadcastReceiver(Label = "@string/WidgetName")]
-		[IntentFilter(new string[] { AppWidgetManager.ActionAppwidgetUpdate, MainActivity.CONNECTIVITY_CHANGE, MainActivity.SCAN_RESULTS, MainActivity.WIFI_STATE_CHANGE })]
+		[IntentFilter(new string[] { AppWidgetManager.ActionAppwidgetUpdate, MainActivity.CONNECTIVITY_CHANGE, MainActivity.SCAN_RESULTS, MainActivity.WIFI_STATE_CHANGE, MainActivity.WIFI_AP_STATE_CHANGE })]
 		[MetaData("android.appwidget.provider", Resource = "@xml/widgetdefine")]    // ファイル名大文字でも、指定は小文字にしないとだめみたい
 		class DeviceSwitchWidget : AppWidgetProvider
 		{
@@ -71,6 +71,23 @@ namespace NetworkDeviceSwitch
 					}
 					else if(wifiManager.WifiState == WifiState.Disabled){
 						remoteViews.SetImageViewResource(Resource.Id.WiFiButton, Resource.Drawable.wifi_button_off);
+					}
+
+					ComponentName widget = new ComponentName(context, Java.Lang.Class.FromType(typeof(DeviceSwitchWidget)).Name);
+					AppWidgetManager manager = AppWidgetManager.GetInstance(context);
+					manager.UpdateAppWidget(widget, remoteViews);
+				}
+
+				if(intent.Action.Equals(MainActivity.WIFI_AP_STATE_CHANGE)) {
+					var wifiManager = (WifiManager)context.GetSystemService(Context.WifiService);
+					RemoteViews remoteViews = new RemoteViews(context.PackageName, Resource.Layout.WidgetLayout);
+
+					WifiApState state = WifiUtility.GetWifiApState(context);
+					if(state == WifiApState.Enabled) {
+						remoteViews.SetImageViewResource(Resource.Id.TetheringButton, Resource.Drawable.ap_button_on);
+					}
+					else if(state == WifiApState.Disabled) {
+						remoteViews.SetImageViewResource(Resource.Id.TetheringButton, Resource.Drawable.ap_button_off);
 					}
 
 					ComponentName widget = new ComponentName(context, Java.Lang.Class.FromType(typeof(DeviceSwitchWidget)).Name);

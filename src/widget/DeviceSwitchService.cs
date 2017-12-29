@@ -23,12 +23,13 @@ namespace NetworkDeviceSwitch
 		/// <summary>
 		/// Wifi,テザリングスイッチを押したときの各処理実装
 		/// </summary>
-		[IntentFilter(new string[] { ACTION_TOGGLE_WIFI })]
+		[IntentFilter(new string[] { ACTION_TOGGLE_WIFI, ACTION_TOGGLE_WIFI_AP })]
 		[Service]   // AndroidManifestに追記する代わりにAttributeを設定する(xamarin)
 		class DeviceSwitchService : Service
 		{
 
 			const string ACTION_TOGGLE_WIFI = "ToggleWifi";
+			const string ACTION_TOGGLE_WIFI_AP = "ToggleWifiAp";
 
 			WifiManager _WifiManager = null;
 
@@ -66,25 +67,43 @@ namespace NetworkDeviceSwitch
 				RemoteViews remoteViews = new RemoteViews(this.PackageName, Resource.Layout.WidgetLayout);
 
 
-				// ボタン押したらwifiスイッチON,OFFする
+				// Wifiボタン押したらwifi機能ON,OFFする
 				Intent ToggleWifiIntent = new Intent();
 				// Wifiボタンを押したときにこのクラス宛にIntentブロードキャストして、OnStartCommandが呼ばれる。
 				ToggleWifiIntent.SetAction(ACTION_TOGGLE_WIFI);
-				PendingIntent ToggleWifiPendingIntent = PendingIntent.GetService(this, 0, ToggleWifiIntent, 0);   // サービスクラスへ投げるインテント作成
+				// サービスクラスへ投げるインテント作成
+				PendingIntent ToggleWifiPendingIntent = PendingIntent.GetService(this, 0, ToggleWifiIntent, 0);
 				remoteViews.SetOnClickPendingIntent(Resource.Id.WiFiButton, ToggleWifiPendingIntent);
+
+				// WifiApボタン押したらwifiAp機能On,Offする
+				Intent ToggleWifiApIntent = new Intent();
+				ToggleWifiApIntent.SetAction(ACTION_TOGGLE_WIFI_AP);
+				PendingIntent ToggleWifiApPendingIntent = PendingIntent.GetService(this, 0, ToggleWifiApIntent, 0);
+				remoteViews.SetOnClickPendingIntent(Resource.Id.TetheringButton, ToggleWifiApPendingIntent);
 
 				// 上記Intentを受け取って呼び出された場合、以下を通る
 				if (!string.IsNullOrEmpty(intent.Action)){
 					if (intent.Action.Equals(ACTION_TOGGLE_WIFI)){
-						ToggleWifi();
+						Task.Run(() => ToggleWifiAsync());
+					}
+
+					if(intent.Action.Equals(ACTION_TOGGLE_WIFI_AP)) {
+						Task.Run(() => ToggleWifiApAsync());
 					}
 				}
 
-				if (_WifiManager.IsWifiEnabled){
+
+				if (WifiUtility.IsWifiEnabled(this)){
 					remoteViews.SetImageViewResource(Resource.Id.WiFiButton, Resource.Drawable.wifi_button_on);
 				}
 				else{
 					remoteViews.SetImageViewResource(Resource.Id.WiFiButton, Resource.Drawable.wifi_button_off);
+				}
+				if(WifiUtility.IsWifiApEnabled(this)) {
+					remoteViews.SetImageViewResource(Resource.Id.TetheringButton, Resource.Drawable.ap_button_on);
+				}
+				else {
+					remoteViews.SetImageViewResource(Resource.Id.TetheringButton, Resource.Drawable.ap_button_off);
 				}
 
 				return remoteViews;
@@ -94,18 +113,22 @@ namespace NetworkDeviceSwitch
 			/// <summary>
 			/// WifiのON,OFF切り替え
 			/// </summary>
-			void ToggleWifi()
+			async Task ToggleWifiAsync()
 			{
-				if (_WifiManager.IsWifiEnabled)
-				{
+				if (_WifiManager.IsWifiEnabled){
 					_WifiManager.SetWifiEnabled(false);
-		//			Toast.MakeText(this, "Wifi Disabled.", ToastLength.Short).Show();
 				}
-				else
-				{
+				else{
 					_WifiManager.SetWifiEnabled(true);
-		//			Toast.MakeText(this, "Wifi Enabled.", ToastLength.Short).Show();
 				}
+
+				if(WifiUtility.IsWifiEnabled(this)) {
+					await WifiUtility.ToggleWifiAsync(this, false);
+				}
+				else {
+					await WifiUtility.ToggleWifiAsync(this, true);
+				}
+
 			}
 
 			/// <summary>
@@ -119,6 +142,13 @@ namespace NetworkDeviceSwitch
 					var message = "This Device is not surpported WifiAP.";
 					Toast.MakeText(this, message, ToastLength.Short).Show();
 					return false;
+				}
+
+				if(WifiUtility.IsWifiApEnabled(this)) {
+					await WifiUtility.ToggleWifiApAsync(this, false);
+				}
+				else {
+					await WifiUtility.ToggleWifiApAsync(this, true);
 				}
 
 				bool result = false;

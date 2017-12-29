@@ -45,14 +45,40 @@ namespace NetworkDeviceSwitch
 		/// Wifi 有効,無効確認
 		/// </summary>
 		/// <param name="context"></param>
-		/// <param name="flag"></param>
 		/// <returns></returns>
-		static public bool IsWifiEnabled(Context context, bool flag)
+		static public bool IsWifiEnabled(Context context)
 		{
 			WifiManager wifiManager = (WifiManager)context.GetSystemService(Context.WifiService);
-			if(wifiManager.IsWifiEnabled == flag) {
+			return wifiManager.IsWifiEnabled;
+		}
+
+		/// <summary>
+		/// Toggle Wifi Enabled
+		/// </summary>
+		/// <remarks>
+		/// 外部向け
+		/// </remarks>
+		/// <param name="context"></param>
+		/// <returns></returns>
+		static public async Task<bool> ToggleWifiAsync(Context context, bool enabled)
+		{
+			WifiManager	wifiManager = (WifiManager)context.GetSystemService(Context.WifiService);
+
+			if(wifiManager == null) return false;
+
+			// Wifi有効化する際、WifiApがすでに有効な場合まず、WifiApを無効化する.
+			if(enabled) {
+				if(IsWifiApEnabled(context)) {
+					await ToggleWifiApAsync(context, false);
+				}
+			}
+
+			if(wifiManager.IsWifiEnabled != enabled){
+				wifiManager.SetWifiEnabled(enabled);
+
 				return true;
 			}
+
 			return false;
 		}
 
@@ -61,7 +87,7 @@ namespace NetworkDeviceSwitch
 		/// </summary>
 		/// <param name="context"></param>
 		/// <returns></returns>
-		static public bool ToggleWifi(Context context, bool enabled)
+		static private bool ToggleWifi(Context context, bool enabled)
 		{
 			WifiManager	wifiManager = (WifiManager)context.GetSystemService(Context.WifiService);
 
@@ -246,7 +272,7 @@ namespace NetworkDeviceSwitch
 			Action<bool> WaitForWifiEnabled = async (flag) =>
 			{
 				while(true) {
-					if(WifiUtility.IsWifiEnabled(context, flag)){
+					if(IsWifiEnabled(context) == flag){
 						return;
 					}
 					await Task.Delay(WaitMilliSec);
