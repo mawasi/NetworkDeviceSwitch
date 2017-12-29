@@ -29,6 +29,9 @@ namespace NetworkDeviceSwitch
 
 		public const string WIFI_STATE_CHANGE = WifiManager.WifiStateChangedAction;
 
+		// 自作のインテントのアクション。WifiApの状態に変化があったらブロードキャストされる
+		public const string WIFI_AP_STATE_CHANGE = "WIFI_AP_STATE_CHANGE";
+
 		#endregion  // Definition
 
 
@@ -144,6 +147,7 @@ namespace NetworkDeviceSwitch
 			NetintentFilter.AddAction(CONNECTIVITY_CHANGE);
 			NetintentFilter.AddAction(SCAN_RESULTS);
 			NetintentFilter.AddAction(WIFI_STATE_CHANGE);
+			NetintentFilter.AddAction(WIFI_AP_STATE_CHANGE);
 			_WifiController = new WifiController(this);
 			RegisterReceiver(_WifiController, NetintentFilter);
 
