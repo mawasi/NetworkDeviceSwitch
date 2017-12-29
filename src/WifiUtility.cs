@@ -20,40 +20,6 @@ namespace NetworkDeviceSwitch
 	/// </summary>
 	public class WifiUtility
 	{
-		#region Definition
-
-		/// <summary>
-		/// テザリング機能の状態
-		/// </summary>
-		/// <remarks>
-		/// https://github.com/android/platform_frameworks_base/blob/master/wifi/java/android/net/wifi/WifiManager.java
-		/// </remarks>
-		public class WifiAPState
-		{
-			/// <summary>
-			/// Wi-Fi AP is currently being disabled. The state will change to [WifiAPState.Disabled] if it finishes successfully.
-			/// </summary>
-			public const int Disabling = 10;
-			/// <summary>
-			/// Wi-Fi AP is disabled.
-			/// </summary>
-			public const int Disabled = 11;	// 無効状態
-			/// <summary>
-			///  Wi-Fi AP is currently being enabled. The state will change to [WifiAPState.Enabled] if it finishes successfully.
-			/// </summary>
-			public const int Enabling = 12;
-			/// <summary>
-			/// Wi-Fi AP is enabled.
-			/// </summary>
-			public const int Enabled = 13;	// 有効状態
-			/// <summary>
-			/// Wi-Fi AP is in a failed state. This state will occur when an error occurs during enabling or disabling.
-			/// </summary>
-			public const int Failed = 14;
-		}
-
-		#endregion // Definition
-
 
 		#region Method
 
@@ -161,25 +127,46 @@ namespace NetworkDeviceSwitch
 		#region TetheringMethod
 
 
+		/// <summary>
+		/// 
+		/// </summary>
+		/// <param name="context"></param>
+		/// <returns></returns>
+		static public bool IsWifiApEnabled(Context context)
+		{
+			bool result = false;
+
+			try {
+				WifiManager wifiManager = (WifiManager)context.GetSystemService(Context.WifiService);
+				var method = wifiManager.Class.GetDeclaredMethod("isWifiApEnabled");
+				result = (bool)method.Invoke(wifiManager);
+			}
+			catch(Exception e) {
+				Android.Util.Log.Error("Error", $"IsWifiApEnabled() {e.ToString()}");
+			}
+
+			return result;
+		}
+
 
 		/// <summary>
 		/// Get Wifi access point state.
 		/// </summary>
 		/// <param name="context"></param>
-		/// <returns>WifiAPstate</returns>
-		static public int GetWifiApState(Context context)
+		/// <returns>WifiApState</returns>
+		static public WifiApState GetWifiApState(Context context)
 		{
-			int state;
+			WifiApState state;
 
 			try {
 				WifiManager wifiManager = (WifiManager)context.GetSystemService(Context.WifiService);
 				var method = wifiManager.Class.GetDeclaredMethod("getWifiApState");
-				state = (int)method.Invoke(wifiManager);
+				state = (WifiApState)(int)method.Invoke(wifiManager);
 				Android.Util.Log.Info("Info", $"WifiApState = {state}");
 			}
 			catch(Exception e) {
-				Android.Util.Log.Error("Error", e.ToString());
-				state = WifiAPState.Failed;
+				Android.Util.Log.Error("Error", $"GetWifiApState() {e.ToString()}");
+				state = WifiApState.Failed;
 			}
 
 			return state;
@@ -197,7 +184,7 @@ namespace NetworkDeviceSwitch
 			bool result;
 			try {
 				WifiManager wifiManager = (WifiManager)context.GetSystemService(Context.WifiService);
-				var method = wifiManager.Class.GetDeclaredMethod("setWifiApEnabled");
+				var method = wifiManager.Class.GetDeclaredMethod("setWifiApEnabled", new WifiConfiguration().Class, Java.Lang.Boolean.Type);
 				method.Accessible = true;
 				method.Invoke(wifiManager, null, enabled);
 				result = true;
@@ -210,13 +197,20 @@ namespace NetworkDeviceSwitch
 			return result;
 		}
 
-#if false
+		/// <summary>
+		/// Toggle Wifi access point switch
+		/// </summary>
+		/// <remarks>
+		/// WifiAp有効化前にWifi無効化処理を入れています.
+		/// </remarks>
+		/// <param name="context"></param>
+		/// <param name="enabled"></param>
+		/// <returns></returns>
 		static public async Task<bool> ToggleWifiApAsync(Context context, bool enabled)
 		{
-			bool result = false;
 
 			int threadID = System.Threading.Thread.CurrentThread.ManagedThreadId;
-			Android.Util.Log.Info("Info", $"WifiUtility.ToggleWifiApAsync({result}) ThreadID = {threadID}");
+			Android.Util.Log.Info("Info", $"WifiUtility.ToggleWifiApAsync({enabled}) ThreadID = {threadID}");
 
 			// 待機時間
 			const int WaitMilliSec = 100;
@@ -226,8 +220,8 @@ namespace NetworkDeviceSwitch
 			Func<Task<bool>> EnablingCheck = async () =>
 			{
 				while(true) {
-					int value = WifiUtility.GetWifiApState(context);
-					if(value == WifiUtility.WifiAPState.Enabled) {
+					WifiApState value = GetWifiApState(context);
+					if(value == WifiApState.Enabled) {
 						return true;
 					}
 					await Task.Delay(WaitMilliSec);	// 100ミリ待機
@@ -239,8 +233,8 @@ namespace NetworkDeviceSwitch
 			Func<bool, Task<bool>> DisablingCheck = async (flag) =>
 			{
 				while(true) {
-					int value = WifiUtility.GetWifiApState(context);
-					if(value == WifiUtility.WifiAPState.Disabled) {
+					WifiApState value = GetWifiApState(context);
+					if(value == WifiApState.Disabled) {
 						return true;
 					}
 					await Task.Delay(WaitMilliSec);	// 100ミリ待機
@@ -259,8 +253,70 @@ namespace NetworkDeviceSwitch
 				}
 			};
 
+
+			bool result = false;
+
+			WifiApState wifiApState = GetWifiApState(context);
+
+			if(enabled) {	// 有効化処理
+				switch(wifiApState) {	// 現在のテザリングの状態によって処理を分ける
+				case WifiApState.Enabled:
+					result = true;
+					break;
+				case WifiApState.Disabled:
+					// Set Wifi Disabled
+					ToggleWifi(context, !enabled);
+
+					// Waiting for Wifi Disabled.
+					await Task.Run(() => WaitForWifiEnabled(!enabled));
+
+					// Set WifiAp Enabled
+					if(SetWifiApEnabled(context, enabled) == false) {
+						break;	// 処理に失敗してた場合はここで処理終了
+					}
+
+					// テザリングの有効化チェック
+					result = await EnablingCheck();
+
+					break;
+				case WifiApState.Failed:
+				default:
+					Android.Util.Log.Error("Error", "Unprocessed WifiAPState Switch. WifiAPState = {0}", wifiApState);
+					break;
+				}
+			}
+			else {	// 無効化処理
+				switch(wifiApState) {
+				case WifiApState.Enabled:
+					// Set WifiAp Disabled
+					if(SetWifiApEnabled(context, enabled) == false) {
+						break;	// 処理に失敗してた場合はここで処理終了
+					}
+
+					// テザリングの無効化チェック
+					result = await DisablingCheck(enabled);
+
+					break;
+				case WifiApState.Disabled:
+					result = true;
+					break;
+				case WifiApState.Failed:
+				default:
+					Android.Util.Log.Error("Error", "Unprocessed WifiAPState Switch. WifiAPState = {0}", wifiApState);
+					break;
+				}
+			}
+
+			// WifiApの状態変化をブロードキャスト
+			if(result) {
+				Intent WifiApIntent = new Intent();
+				WifiApIntent.SetAction(MainActivity.WIFI_AP_STATE_CHANGE);
+				context.SendBroadcast(WifiApIntent);
+			}
+
+			return result;
 		}
-#endif
+
 
 		#endregion // TetheringMethod
 

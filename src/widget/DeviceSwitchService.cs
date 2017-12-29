@@ -114,8 +114,8 @@ namespace NetworkDeviceSwitch
 			/// <returns></returns>
 			async Task<bool> ToggleWifiApAsync()
 			{
-				int apstate = WifiUtility.GetWifiApState(this);
-				if(apstate == WifiUtility.WifiAPState.Failed) {
+				WifiApState apstate = WifiUtility.GetWifiApState(this);
+				if(apstate == WifiApState.Failed) {
 					var message = "This Device is not surpported WifiAP.";
 					Toast.MakeText(this, message, ToastLength.Short).Show();
 					return false;
