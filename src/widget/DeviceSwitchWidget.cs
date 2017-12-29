@@ -82,11 +82,14 @@ namespace NetworkDeviceSwitch
 					var wifiManager = (WifiManager)context.GetSystemService(Context.WifiService);
 					RemoteViews remoteViews = new RemoteViews(context.PackageName, Resource.Layout.WidgetLayout);
 
-					WifiApState state = WifiUtility.GetWifiApState(context);
-					if(state == WifiApState.Enabled) {
+					// WifiApStateは、WifiApEnabledがすでにfalseだったとしてもまだDisabling状態の場合があるので
+					// ここではWifiApEnabledでボタンの表示切り替えを判定する.
+//					WifiApState state = WifiUtility.GetWifiApState(context);
+					bool wifiapEnabled = WifiUtility.IsWifiApEnabled(context);
+					if(wifiapEnabled) {
 						remoteViews.SetImageViewResource(Resource.Id.TetheringButton, Resource.Drawable.ap_button_on);
 					}
-					else if(state == WifiApState.Disabled) {
+					else if(wifiapEnabled == false) {
 						remoteViews.SetImageViewResource(Resource.Id.TetheringButton, Resource.Drawable.ap_button_off);
 					}
 

@@ -90,6 +90,35 @@ namespace NetworkDeviceSwitch
 		}
 
 		/// <summary>
+		/// 各種ビューの初期化
+		/// </summary>
+		public void Initialize()
+		{
+			_StatusView.Text = "";
+
+			// Wifi機能が有効ならスイッチをONにしておく
+			if(_WifiManager.IsWifiEnabled) {
+				_WifiSwitch.Checked = true;
+			}
+			// Tethering機能が有効ならスイッチをON. Wifi機能とは排他的関係
+			WifiApState wifiApState = WifiUtility.GetWifiApState(_Application);
+			_TetheringSwitch.Enabled = true;	// 一旦有効にしておく
+			if (wifiApState == WifiApState.Enabled) {
+				_TetheringSwitch.Checked = true;
+			}
+			else {
+				if(wifiApState == WifiApState.Failed) {
+					// ステートが失敗ならviewを無効化
+					_TetheringSwitch.Enabled = false;
+					_IsWifiApActive = false;
+				}
+				else {
+					_TetheringSwitch.Checked = false;
+				}
+			}
+		}
+
+		/// <summary>
 		/// ブロードキャスト受け取り
 		/// </summary>
 		/// <param name="context"></param>
@@ -129,47 +158,10 @@ namespace NetworkDeviceSwitch
 
 			if(intent.Action == MainActivity.CONNECTIVITY_CHANGE){
 				CheckNetworkState();
-#if false
-				// テザリングの状態がDisabledならスイッチの状態をOFFにする	
-				if(GetWifiApState() == WifiAPState.Disabled){
-					if(_TetheringSwitch.Checked){
-						_TetheringSwitch.Checked = false;
-					}
-				}
-#endif
 			}
 
 		}
 
-
-		/// <summary>
-		/// 各種ビューの初期化
-		/// </summary>
-		public void Initialize()
-		{
-			_StatusView.Text = "";
-
-			// Wifi機能が有効ならスイッチをONにしておく
-			if(_WifiManager.IsWifiEnabled) {
-				_WifiSwitch.Checked = true;
-			}
-			// Tethering機能が有効ならスイッチをON. Wifi機能とは排他的関係
-			WifiApState wifiApState = WifiUtility.GetWifiApState(_Application);
-			_TetheringSwitch.Enabled = true;	// 一旦有効にしておく
-			if (wifiApState == WifiApState.Enabled) {
-				_TetheringSwitch.Checked = true;
-			}
-			else {
-				if(wifiApState == WifiApState.Failed) {
-					// ステートが失敗ならviewを無効化
-					_TetheringSwitch.Enabled = false;
-					_IsWifiApActive = false;
-				}
-				else {
-					_TetheringSwitch.Checked = false;
-				}
-			}
-		}
 
 		/// <summary>
 		/// Enable switch view.

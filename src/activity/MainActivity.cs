@@ -7,7 +7,6 @@ using Android.Net;
 using Android.Content;
 using Android.Telephony;
 
-using System.Reflection;
 using System;
 
 
@@ -37,16 +36,6 @@ namespace NetworkDeviceSwitch
 
 		#region Field
 
-		/// <summary>
-		/// Wifi Switch View
-		/// </summary>
-		Switch mWifiSwitch = null;
-		Switch mMobileSwitch = null;		// モバイルデータスイッチ
-		Switch mTetheringSwitch = null;		// テザリングスイッチ
-
-		public TextView StatusView = null;	// ネットワークステータス表示用
-
-
 		ConnectivityManager	mConnectivityManager = null;
 		WifiManager			mWifiManager = null;
 		TelephonyManager	mTelephonyManager = null;
@@ -59,25 +48,6 @@ namespace NetworkDeviceSwitch
 
 		#endregion	// Field
 
-		#region Property
-
-		/// <summary>
-		/// Wifi Switch View
-		/// </summary>
-		public Switch WifiSwitch {
-			get { return mWifiSwitch; }
-		}
-
-		public Switch MobileSwitch {
-			get { return mMobileSwitch; }
-		}
-
-		public Switch TetheringSwitch {
-			get { return mTetheringSwitch; }
-		}
-
-		#endregion // Property
-
 
 		#region Base Method
 
@@ -88,17 +58,6 @@ namespace NetworkDeviceSwitch
 			// Set our view from the "main" layout resource
 			SetContentView (Resource.Layout.Main);
 
-			StatusView = FindViewById<TextView>(Resource.Id.StatusView);
-			StatusView.Text = "";
-
-			// Wifiスイッチビュー取得
-			mWifiSwitch = FindViewById<Switch>(Resource.Id.WifiSwitch);
-
-			// テザリングスイッチビュー取得
-			mTetheringSwitch = FindViewById<Switch>(Resource.Id.TetheringSwitch);
-
-//			mMobileSwitch = FindViewById<Switch>(Resource.Id.MobileSwitch);
-//			mMobileSwitch.CheckedChange += OnMobileDataSwitchCheckedChange;
 
 			// システムサービスの取得
 			GatherSystemService();
@@ -148,11 +107,13 @@ namespace NetworkDeviceSwitch
 			NetintentFilter.AddAction(SCAN_RESULTS);
 			NetintentFilter.AddAction(WIFI_STATE_CHANGE);
 			NetintentFilter.AddAction(WIFI_AP_STATE_CHANGE);
-			_WifiController = new WifiController(this);
+			if(_WifiController == null){
+				_WifiController = new WifiController(this);
+			}
+			_WifiController.Initialize();
+
 			RegisterReceiver(_WifiController, NetintentFilter);
 
-			// ビューの初期化
-			InitializeView();
 
 		}
 
@@ -175,15 +136,6 @@ namespace NetworkDeviceSwitch
 
 		#region Private Method
 
-		/// <summary>
-		/// 各種ビューの初期化
-		/// </summary>
-		void InitializeView()
-		{
-			// Wifi コントローラ初期化
-			_WifiController.Initialize();
-
-		}
 
 
 		/// <summary>
@@ -232,23 +184,25 @@ namespace NetworkDeviceSwitch
 			try {
 				// Lollipop以降の実装
 				if(Build.VERSION.SdkInt >= BuildVersionCodes.Lollipop) {
+#if false
 			//		settings
 					// クラスインスタンス取得
-//					Java.Lang.Class telephonManClass = Java.Lang.Class.ForName(mTelephonyManager.Class.Name);
-//					Java.Lang.Reflect.Field[] fields = telephonManClass.GetDeclaredFields();
-//					if(enabled == true) {
-//						Console.WriteLine("##### Start Field List #####");
-//						foreach(var field in fields) {
-//							Console.WriteLine(field.Name);
-//						}
-//						Console.WriteLine("##### End Field List #####");
-//						Java.Lang.Reflect.Method[] methods = telephonManClass.GetDeclaredMethods();
-//						Console.WriteLine("##### Start Methd List #####");
-//						foreach(var method in methods) {
-//							Console.WriteLine(method.Name);
-//						}
-//						Console.WriteLine("##### End Methd List #####");
-//					}
+					Java.Lang.Class telephonManClass = Java.Lang.Class.ForName(mTelephonyManager.Class.Name);
+					Java.Lang.Reflect.Field[] fields = telephonManClass.GetDeclaredFields();
+					if(enabled == true) {
+						Console.WriteLine("##### Start Field List #####");
+						foreach(var field in fields) {
+							Console.WriteLine(field.Name);
+						}
+						Console.WriteLine("##### End Field List #####");
+						Java.Lang.Reflect.Method[] methods = telephonManClass.GetDeclaredMethods();
+						Console.WriteLine("##### Start Methd List #####");
+						foreach(var method in methods) {
+							Console.WriteLine(method.Name);
+						}
+						Console.WriteLine("##### End Methd List #####");
+					}
+#endif
 					ToggleMobileDatafromL(enabled);
 				}	// Gingerbread以上 KitkatWatch以下の実装
 				if(Build.VERSION.SdkInt <= BuildVersionCodes.KitkatWatch

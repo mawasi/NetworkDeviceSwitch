@@ -4,11 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-using Android.App;
 using Android.Content;
-using Android.OS;
-using Android.Runtime;
-using Android.Views;
 using Android.Widget;
 using Android.Net;
 using Android.Net.Wifi;
@@ -49,7 +45,7 @@ namespace NetworkDeviceSwitch
 		static public bool IsWifiEnabled(Context context)
 		{
 			WifiManager wifiManager = (WifiManager)context.GetSystemService(Context.WifiService);
-			return wifiManager.IsWifiEnabled;
+			return wifiManager?.IsWifiEnabled ?? false;
 		}
 
 		/// <summary>
@@ -240,43 +236,32 @@ namespace NetworkDeviceSwitch
 
 			// 待機時間
 			const int WaitMilliSec = 100;
+			// 試行回数100回まで
+			const int MaxTrials = 100;
 
-			// Enablingが完了したかチェック
-			// todo: タイムアウト処理作る
-			Func<Task<bool>> EnablingCheck = async () =>
+
+			// WifiAp 有効(無効)化待ち
+			Func<bool, Task<bool>> WaitForWifiApEnabled = async (flag) =>
 			{
-				while(true) {
-					WifiApState value = GetWifiApState(context);
-					if(value == WifiApState.Enabled) {
+				for(var i = 0; i < MaxTrials; i++){
+					if(IsWifiApEnabled(context) == flag){
 						return true;
-					}
-					await Task.Delay(WaitMilliSec);	// 100ミリ待機
-				}
-			};
-
-			// Disablingが完了したかチェック
-			// todo: タイムアウト処理作る
-			Func<bool, Task<bool>> DisablingCheck = async (flag) =>
-			{
-				while(true) {
-					WifiApState value = GetWifiApState(context);
-					if(value == WifiApState.Disabled) {
-						return true;
-					}
-					await Task.Delay(WaitMilliSec);	// 100ミリ待機
-				}
-			};
-
-			// Wifi 有効(無効)化待ち
-			// todo: タイムアウト処理作る
-			Action<bool> WaitForWifiEnabled = async (flag) =>
-			{
-				while(true) {
-					if(IsWifiEnabled(context) == flag){
-						return;
 					}
 					await Task.Delay(WaitMilliSec);
 				}
+				return false;
+			};
+
+			// Wifi 有効(無効)化待ち
+			Func<bool, Task<bool>> WaitForWifiEnabled = async (flag) =>
+			{
+				for(var i = 0; i < MaxTrials; i++) {
+					if(IsWifiEnabled(context) == flag){
+						return true;
+					}
+					await Task.Delay(WaitMilliSec);
+				}
+				return false;
 			};
 
 
@@ -301,8 +286,8 @@ namespace NetworkDeviceSwitch
 						break;	// 処理に失敗してた場合はここで処理終了
 					}
 
-					// テザリングの有効化チェック
-					result = await EnablingCheck();
+					// テザリングの有効化待ち
+					result = await WaitForWifiApEnabled(enabled);
 
 					break;
 				case WifiApState.Failed:
@@ -319,8 +304,8 @@ namespace NetworkDeviceSwitch
 						break;	// 処理に失敗してた場合はここで処理終了
 					}
 
-					// テザリングの無効化チェック
-					result = await DisablingCheck(enabled);
+					// テザリングの無効化待ち
+					result = await WaitForWifiApEnabled(enabled);
 
 					break;
 				case WifiApState.Disabled:

@@ -18,7 +18,7 @@ namespace NetworkDeviceSwitch
 
 	namespace Widget
 	{
-
+		// todo:一つのサービスに色々まとめすぎてめんどくさいことになってるので、分離するなどする。
 
 		/// <summary>
 		/// Wifi,テザリングスイッチを押したときの各処理実装
@@ -91,19 +91,19 @@ namespace NetworkDeviceSwitch
 						Task.Run(() => ToggleWifiApAsync());
 					}
 				}
-
-
-				if (WifiUtility.IsWifiEnabled(this)){
-					remoteViews.SetImageViewResource(Resource.Id.WiFiButton, Resource.Drawable.wifi_button_on);
-				}
-				else{
-					remoteViews.SetImageViewResource(Resource.Id.WiFiButton, Resource.Drawable.wifi_button_off);
-				}
-				if(WifiUtility.IsWifiApEnabled(this)) {
-					remoteViews.SetImageViewResource(Resource.Id.TetheringButton, Resource.Drawable.ap_button_on);
-				}
-				else {
-					remoteViews.SetImageViewResource(Resource.Id.TetheringButton, Resource.Drawable.ap_button_off);
+				else{	// Intent.Actionが空＝widgetのOnUpdateからの呼び出しとして以下を処理。
+					if (WifiUtility.IsWifiEnabled(this)){
+						remoteViews.SetImageViewResource(Resource.Id.WiFiButton, Resource.Drawable.wifi_button_on);
+					}
+					else{
+						remoteViews.SetImageViewResource(Resource.Id.WiFiButton, Resource.Drawable.wifi_button_off);
+					}
+					if(WifiUtility.IsWifiApEnabled(this)) {
+						remoteViews.SetImageViewResource(Resource.Id.TetheringButton, Resource.Drawable.ap_button_on);
+					}
+					else {
+						remoteViews.SetImageViewResource(Resource.Id.TetheringButton, Resource.Drawable.ap_button_off);
+					}
 				}
 
 				return remoteViews;
