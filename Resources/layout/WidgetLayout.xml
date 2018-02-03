@@ -9,6 +9,7 @@
     android:focusable="true">
 	<ImageButton
         android:id="@+id/WiFiButton"
+		android:scaleType="centerCrop"
         android:layout_width="80dp"
         android:layout_height="80dp"
 		android:background="@null"
@@ -24,6 +25,7 @@
 -->
 	<ImageButton
         android:id="@+id/TetheringButton"
+		android:scaleType="centerCrop"
         android:layout_width="80dp"
         android:layout_height="80dp"
 		android:background="@null"
