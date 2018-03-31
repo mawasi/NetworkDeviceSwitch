@@ -5,57 +5,48 @@
 	android:orientation="horizontal"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-	android:background="#a0aaaaaa"
     android:focusable="true">
 	<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
 		android:id="@+id/WifiLayout"
 		android:orientation="horizontal"
-		android:scaleType="centerCrop"
 		android:layout_weight="1"
 		android:layout_width="match_parent"
-		android:layout_height="match_parent"
-		android:background="#a0ffaaaa">
+		android:layout_height="match_parent">
 
 		<ImageButton
 			android:id="@+id/WiFiButton"
-			android:scaleType="centerCrop"
+			android:scaleType="centerInside"
 			android:layout_weight="1"
-			android:layout_width="80dp"
-			android:layout_height="80dp"
+			android:layout_width="match_parent"
+			android:layout_height="match_parent"
 			android:background="@null"
 			android:src="@drawable/wifi_button_off" />
 		<!--
-			android:src="@drawable/widget_button"
-
 			android:layout_alignParentRight="true"
-
 			android:scaleType="fitCenter"
-			android:background="@null"
-			android:src="@drawable/wifi_button_off"
 	-->
 	</LinearLayout>
 
 	<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
 		android:id="@+id/TetheringLayout"
 		android:orientation="horizontal"
-		android:scaleType="centerCrop"
 		android:layout_weight="1"
 		android:layout_width="match_parent"
-		android:layout_height="match_parent"
-		android:background="#a0ffaaaa">
-
+		android:layout_height="match_parent">
+<!--
+		android:background="#a0ffaaaa"
+-->
 		<ImageButton
 			android:id="@+id/TetheringButton"
-			android:scaleType="centerCrop"
+			android:scaleType="centerInside"
 			android:layout_weight="1"
-			android:layout_width="80dp"
-			android:layout_height="80dp"
+			android:layout_width="match_parent"
+			android:layout_height="match_parent"
 			android:background="@null"
 			android:src="@drawable/ap_button_off" />
 		<!--
 			↓これを設定することでバックグラウンドをなくせる
 			android:background="@null"
-
 			android:src="@drawable/widget_button" />
 	-->
 
