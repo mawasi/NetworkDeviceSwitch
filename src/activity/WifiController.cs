@@ -125,7 +125,7 @@ namespace NetworkDeviceSwitch
 		/// <param name="intent"></param>
 		public override void OnReceive(Context context, Intent intent)
 		{
-			Android.Util.Log.Info("Info", "Wifi 関連のブロードキャストを受け取りました. Action = {0} ", intent.Action);
+			DebugUtility.LogInfo("Info", $"Wifi 関連のブロードキャストを受け取りました. Action = {intent.Action} ");
 			// 別のアプリからフォーカス戻したときも以下のアクションでレシーブされる。
 			if(intent.Action == MainActivity.SCAN_RESULTS) {
 				// 最寄りの登録済みAPに接続を試みる
@@ -133,7 +133,7 @@ namespace NetworkDeviceSwitch
 			}
 
 			if(intent.Action == MainActivity.WIFI_STATE_CHANGE){
-				Android.Util.Log.Info("Info", $"IsWifiEnabled = {_WifiManager.IsWifiEnabled} : WifiState = {_WifiManager.WifiState.ToString()} : WifiSwitch = {_WifiSwitch.Checked} ");
+				DebugUtility.LogInfo("Info", $"IsWifiEnabled = {_WifiManager.IsWifiEnabled} : WifiState = {_WifiManager.WifiState.ToString()} : WifiSwitch = {_WifiSwitch.Checked} ");
 				// Wifiデバイスの状態とスイッチの状態が一致してない場合に、デバイスの状態にスイッチを合わせる
 				if((_WifiManager.WifiState == WifiState.Disabled)
 					|| (_WifiManager.WifiState == WifiState.Enabled)){
@@ -254,34 +254,34 @@ namespace NetworkDeviceSwitch
 		async void OnTetheringSwitchCheckedChange(object sender, CompoundButton.CheckedChangeEventArgs e)
 		{
 			int threadID = System.Threading.Thread.CurrentThread.ManagedThreadId;
-			Android.Util.Log.Info("Info", $"WifiController.OnTetheringSwitchCheckedChange({e.IsChecked}) ThreadID = {threadID}");
+			DebugUtility.LogInfo("Info", $"WifiController.OnTetheringSwitchCheckedChange({e.IsChecked}) ThreadID = {threadID}");
 #if false
 			GetWifiApState();
 
 			// リフレクションでメソッド全取得
 			var methods = mWifiManager.Class.GetDeclaredMethods();
 
-			Android.Util.Log.Info("TetheringTest", "mWifiManager Method List Start.");
+			DebugUtility.LogInfo("TetheringTest", "mWifiManager Method List Start.");
 			foreach(var method in methods) {
-				Android.Util.Log.Info("TetheringTest", "Method: {0}", method.Name);
+				DebugUtility.LogInfo("TetheringTest", $"Method: {method.Name}");
 				foreach(var param in method.GetParameterTypes()) {
-					Android.Util.Log.Info("TetheringTest", "Parameter: {0}", param.Name);
+					DebugUtility.LogInfo("TetheringTest", $"Parameter: {param.Name}");
 				}
 			}
-			Android.Util.Log.Info("TetheringTest", "mWifiManager Method List End.");
+			DebugUtility.LogInfo("TetheringTest", "mWifiManager Method List End.");
 
 
-			Android.Util.Log.Info("TetheringTest", "dhcp Info {0}", mWifiManager.DhcpInfo.ToString());
+			DebugUtility.LogInfo("TetheringTest", $"dhcp Info {0}", mWifiManager.DhcpInfo.ToString());
 			// WifiConfigurationにテザリング用のWifiコンフィグも入ってるみたい。
 			var Configurations =  mWifiManager.ConfiguredNetworks;
 			if(Configurations != null) {
-				Android.Util.Log.Info("TetheringTest", "WifiConfigure Count {0}", Configurations.Count);
+				DebugUtility.LogInfo("TetheringTest", "WifiConfigure Count {0}", Configurations.Count);
 				for(int i = 0; i < Configurations.Count; i++) {
-					Android.Util.Log.Info("TetheringTest", "WifiConfigure {0}", i);
-					Android.Util.Log.Info("TetheringTest", "		ssid {0}", Configurations[i].Ssid);
-					Android.Util.Log.Info("TetheringTest", "		NetworkId {0}", Configurations[i].NetworkId);
-					Android.Util.Log.Info("TetheringTest", "		PreSharedKey {0}", Configurations[i].PreSharedKey);
-					Android.Util.Log.Info("TetheringTest", "WifiConfigure {0} End.", i);
+					DebugUtility.LogInfo("TetheringTest", "WifiConfigure {0}", i);
+					DebugUtility.LogInfo("TetheringTest", "		ssid {0}", Configurations[i].Ssid);
+					DebugUtility.LogInfo("TetheringTest", "		NetworkId {0}", Configurations[i].NetworkId);
+					DebugUtility.LogInfo("TetheringTest", "		PreSharedKey {0}", Configurations[i].PreSharedKey);
+					DebugUtility.LogInfo("TetheringTest", "WifiConfigure {0} End.", i);
 				}
 			}
 #else

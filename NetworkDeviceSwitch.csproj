@@ -63,13 +63,15 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="src\widget\DeviceSwitchService.cs" />
+    <Compile Include="src\DebugUtility.cs" />
     <Compile Include="src\widget\DeviceSwitchWidget.cs" />
     <Compile Include="src\activity\MainActivity.cs" />
     <Compile Include="src\activity\NetworkStateReceiver.cs" />
     <Compile Include="Resources\Resource.Designer.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="src\activity\WifiController.cs" />
+    <Compile Include="src\widget\WifiApWidgetService.cs" />
+    <Compile Include="src\widget\WifiWidgetService.cs" />
     <Compile Include="src\WifiApState.cs" />
     <Compile Include="src\WifiUtility.cs" />
   </ItemGroup>

@@ -106,7 +106,7 @@ namespace NetworkDeviceSwitch
 		{
 			// すでに接続済みなら何もしない
 			if(IsOnline(context)){
-				Android.Util.Log.Info("Info", "Already connected.");
+				DebugUtility.LogInfo("Info", "Already connected.");
 				return;
 			}
 
@@ -114,11 +114,11 @@ namespace NetworkDeviceSwitch
 			IList<ScanResult>	results = wifiManager.ScanResults;
 
 			// APスキャン結果
-			Android.Util.Log.Info("Info", "AP Candidate Scan Result Start.");
+			DebugUtility.LogInfo("Info", "AP Candidate Scan Result Start.");
 			foreach(var result in results){
-				Android.Util.Log.Info("Info", "		ssid {0}", result.Ssid);
+				DebugUtility.LogInfo("Info", $"		ssid {result.Ssid}");
 			}
-			Android.Util.Log.Info("Info", "AP Candidate Scan Result End.");
+			DebugUtility.LogInfo("Info", "AP Candidate Scan Result End.");
 
 			// 端末に保存されているネットワーク設定リスト
 			var ConfiguredNetworks = wifiManager.ConfiguredNetworks;
@@ -164,7 +164,7 @@ namespace NetworkDeviceSwitch
 				result = (bool)method.Invoke(wifiManager);
 			}
 			catch(Exception e) {
-				Android.Util.Log.Error("Error", $"IsWifiApEnabled() {e.ToString()}");
+				DebugUtility.LogError("Error", $"IsWifiApEnabled() {e.ToString()}");
 			}
 
 			return result;
@@ -184,10 +184,10 @@ namespace NetworkDeviceSwitch
 				WifiManager wifiManager = (WifiManager)context.GetSystemService(Context.WifiService);
 				var method = wifiManager.Class.GetDeclaredMethod("getWifiApState");
 				state = (WifiApState)(int)method.Invoke(wifiManager);
-				Android.Util.Log.Info("Info", $"WifiApState = {state}");
+				DebugUtility.LogInfo("Info", $"WifiApState = {state}");
 			}
 			catch(Exception e) {
-				Android.Util.Log.Error("Error", $"GetWifiApState() {e.ToString()}");
+				DebugUtility.LogError("Error", $"GetWifiApState() {e.ToString()}");
 				state = WifiApState.Failed;
 			}
 
@@ -212,7 +212,7 @@ namespace NetworkDeviceSwitch
 				result = true;
 			}
 			catch(Exception e) {
-				Android.Util.Log.Error("Error", e.ToString());
+				DebugUtility.LogError("Error", e.ToString());
 				result = false;
 			}
 
@@ -232,7 +232,7 @@ namespace NetworkDeviceSwitch
 		{
 
 			int threadID = System.Threading.Thread.CurrentThread.ManagedThreadId;
-			Android.Util.Log.Info("Info", $"WifiUtility.ToggleWifiApAsync({enabled}) ThreadID = {threadID}");
+			DebugUtility.LogInfo("Info", $"WifiUtility.ToggleWifiApAsync({enabled}) ThreadID = {threadID}");
 
 			// 待機時間
 			const int WaitMilliSec = 100;
@@ -292,7 +292,7 @@ namespace NetworkDeviceSwitch
 					break;
 				case WifiApState.Failed:
 				default:
-					Android.Util.Log.Error("Error", "Unprocessed WifiAPState Switch. WifiAPState = {0}", wifiApState);
+					DebugUtility.LogError("Error", $"Unprocessed WifiAPState Switch. WifiAPState = {wifiApState}");
 					break;
 				}
 			}
@@ -313,7 +313,7 @@ namespace NetworkDeviceSwitch
 					break;
 				case WifiApState.Failed:
 				default:
-					Android.Util.Log.Error("Error", "Unprocessed WifiAPState Switch. WifiAPState = {0}", wifiApState);
+					DebugUtility.LogError("Error", $"Unprocessed WifiAPState Switch. WifiAPState = {wifiApState}");
 					break;
 				}
 			}

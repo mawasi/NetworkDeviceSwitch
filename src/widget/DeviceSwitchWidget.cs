@@ -10,27 +10,41 @@ using Android.Appwidget;
 using Android.Net.Wifi;
 using Android.Net;
 
+
+/*
+参考
+
+https://starzero.hatenablog.com/entry/20110503/1304422342
+http://y-anz-m.blogspot.jp/2011/07/androidappwidget-pendingintent-putextra.html
+http://www110.kir.jp/Android/ch0408.html
+http://workpiles.com/2014/01/android-notification-alarmmanager/
+*/
+
 namespace NetworkDeviceSwitch
 {
 
 	namespace Widget
 	{
 		/// <summary>
-		/// ウィジェットメイン
+		/// Wifi,Tetheringの制御を行うウィジェットメイン
 		/// </summary>
 		[BroadcastReceiver(Label = "@string/WidgetName")]
 		[IntentFilter(new string[] { AppWidgetManager.ActionAppwidgetUpdate, MainActivity.CONNECTIVITY_CHANGE, MainActivity.SCAN_RESULTS, MainActivity.WIFI_STATE_CHANGE, MainActivity.WIFI_AP_STATE_CHANGE })]
 		[MetaData("android.appwidget.provider", Resource = "@xml/widgetdefine")]    // ファイル名大文字でも、指定は小文字にしないとだめみたい
 		class DeviceSwitchWidget : AppWidgetProvider
 		{
+
+			// Toggle Wifi Intent Action.
+			public const string ACTION_TOGGLE_WIFI = "ToggleWifi";
+			// Toggle Wifi Ap Intent Action.
+			public const string ACTION_TOGGLE_WIFI_AP = "ToggleWifiAp";
+
+
 			public override void OnUpdate(Context context, AppWidgetManager appWidgetManager, int[] appWidgetIds)
 			{
 				base.OnUpdate(context, appWidgetManager, appWidgetIds);
 
-				//			context.GetSystemService
-
-
-				context.StartService(new Intent(context, typeof(DeviceSwitchService)));
+				Update(context, appWidgetManager, appWidgetIds);
 			}
 
 			/// <summary>
@@ -43,7 +57,7 @@ namespace NetworkDeviceSwitch
 			public override void OnEnabled(Context context)
 			{
 				base.OnEnabled(context);
-				Android.Util.Log.Info("WidgetStateReceiver", "WidgetStateReceiver::OnEnabled()");
+				DebugUtility.LogInfo("WidgetStateReceiver", "WidgetStateReceiver::OnEnabled()");
 			}
 
 
@@ -107,7 +121,57 @@ namespace NetworkDeviceSwitch
 			public override void OnDisabled(Context context)
 			{
 				base.OnDisabled(context);
-				Android.Util.Log.Info("WidgetStateReceiver", "WidgetStateReceiver::OnDisabled()");
+				DebugUtility.LogInfo("WidgetStateReceiver", "WidgetStateReceiver::OnDisabled()");
+			}
+
+
+			/// <summary>
+			/// ウィジェットのアップデート処理
+			/// </summary>
+			/// <param name="context"></param>
+			/// <param name="appWidgetManager"></param>
+			/// <param name="appWidgetIds"></param>
+			private void Update(Context context, AppWidgetManager appWidgetManager, int[] appWidgetIds)
+			{
+				RemoteViews remoteViews = new RemoteViews(context.PackageName, Resource.Layout.WidgetLayout);
+
+				DebugUtility.LogInfo("Info", $"appWidgetIds.Length = {appWidgetIds.Length}");
+
+				foreach(var appWidgetId in appWidgetIds){
+
+					DebugUtility.LogInfo("Info", $"appWidgetId = {appWidgetId}");
+
+					// Wifiスイッチを押したときにON,OFF制御するサービスにインテントを送る
+					// インテントを送る先を指定
+					Intent ToggleWifiIntent = new Intent(context, typeof(WifiWidgetService));
+					ToggleWifiIntent.SetAction(ACTION_TOGGLE_WIFI);
+					ToggleWifiIntent.PutExtra(AppWidgetManager.ExtraAppwidgetId, appWidgetId);
+					PendingIntent ToggleWifiPendingIntent = PendingIntent.GetService(context, appWidgetId, ToggleWifiIntent, PendingIntentFlags.UpdateCurrent);
+					remoteViews.SetOnClickPendingIntent(Resource.Id.WiFiButton, ToggleWifiPendingIntent);
+
+					// WifiApスイッチを押したときにON,OFF制御するサービスにインテントを送る
+					Intent ToggleWifiApIntent = new Intent(context, typeof(WifiApWidgetService));
+					ToggleWifiApIntent.SetAction(ACTION_TOGGLE_WIFI_AP);
+					ToggleWifiApIntent.PutExtra(AppWidgetManager.ExtraAppwidgetId, appWidgetId);
+					PendingIntent ToggleWifiApPendingIntent = PendingIntent.GetService(context, appWidgetId, ToggleWifiApIntent, PendingIntentFlags.UpdateCurrent);
+					remoteViews.SetOnClickPendingIntent(Resource.Id.TetheringButton, ToggleWifiApPendingIntent);
+				}
+
+				// ウィジェットのボタンイメージの切り替え
+				if (WifiUtility.IsWifiEnabled(context)){
+					remoteViews.SetImageViewResource(Resource.Id.WiFiButton, Resource.Drawable.wifi_button_on);
+				}
+				else{
+					remoteViews.SetImageViewResource(Resource.Id.WiFiButton, Resource.Drawable.wifi_button_off);
+				}
+				if(WifiUtility.IsWifiApEnabled(context)) {
+					remoteViews.SetImageViewResource(Resource.Id.TetheringButton, Resource.Drawable.ap_button_on);
+				}
+				else {
+					remoteViews.SetImageViewResource(Resource.Id.TetheringButton, Resource.Drawable.ap_button_off);
+				}
+
+				appWidgetManager.UpdateAppWidget(appWidgetIds, remoteViews);
 			}
 		}
 	}
