@@ -110,7 +110,7 @@ namespace NetworkDeviceSwitch
 			if(_WifiController == null){
 				_WifiController = new WifiController(this);
 			}
-			_WifiController.Initialize();
+			_WifiController.Initialize(this);
 
 			RegisterReceiver(_WifiController, NetintentFilter);
 
@@ -146,7 +146,7 @@ namespace NetworkDeviceSwitch
 			mConnectivityManager = (ConnectivityManager)GetSystemService(ConnectivityService);
 			mWifiManager = (WifiManager)GetSystemService(WifiService);
 			mTelephonyManager = (TelephonyManager)GetSystemService(TelephonyService);
-			if(Build.VERSION.SdkInt > BuildVersionCodes.Lollipop) {
+			if(Build.VERSION.SdkInt > BuildVersionCodes.LollipopMr1) {
 				mSubscriptionManager = (SubscriptionManager)GetSystemService(TelephonySubscriptionService);
 			}
 		}

@@ -92,7 +92,7 @@ namespace NetworkDeviceSwitch
 		/// <summary>
 		/// 各種ビューの初期化
 		/// </summary>
-		public void Initialize()
+		public void Initialize(Context context)
 		{
 			_StatusView.Text = "";
 
@@ -116,6 +116,8 @@ namespace NetworkDeviceSwitch
 					_TetheringSwitch.Checked = false;
 				}
 			}
+
+			CheckNetworkState(context);
 		}
 
 		/// <summary>
@@ -157,11 +159,10 @@ namespace NetworkDeviceSwitch
 
 
 			if(intent.Action == MainActivity.CONNECTIVITY_CHANGE){
-				CheckNetworkState();
+				CheckNetworkState(context);
 			}
 
 		}
-
 
 		/// <summary>
 		/// Enable switch view.
@@ -173,6 +174,87 @@ namespace NetworkDeviceSwitch
 			if(_IsWifiApActive) {
 				_TetheringSwitch.Enabled = enabled;
 			}
+		}
+
+		/// <summary>
+		/// 通信情報確認
+		/// </summary>
+		void CheckNetworkState(Context context)
+		{
+
+			bool isOnline = WifiUtility.IsOnline(_Application);
+
+
+			StringBuilder builder = new StringBuilder();
+			builder.AppendFormat("SDK Build Version : {0}\n", Build.VERSION.Sdk);
+			builder.AppendFormat("NetworkState : {0}\n", (isOnline ? "Online" : "Offline"));
+
+			if (isOnline)
+			{
+				NetworkInfo activeNetworkInfo = _ConnectivityManager.ActiveNetworkInfo;
+				builder.Append($"ConnectType : {activeNetworkInfo.TypeName}\n");
+
+				List<NetworkInfo> mobileinfos = GetNetworkInfo(ConnectivityType.Mobile);
+				mobileinfos = GetNetworkInfo(ConnectivityType.Mobile);
+				for(int i = 0; i < mobileinfos.Count; i++){
+					builder.Append($"Mobile[{i}] IsAvailable : {mobileinfos[i].IsAvailable}\n");
+					builder.Append($"Mobile[{i}] IsConnected : {mobileinfos[i].IsConnectedOrConnecting}\n");
+				}
+
+
+				switch (activeNetworkInfo.Type)
+				{
+					case ConnectivityType.Wifi:
+						WifiInfo info = _WifiManager.ConnectionInfo;
+						builder.AppendFormat("BSSID : {0}\n", info.BSSID);
+						builder.AppendFormat("SSID : {0}\n", info.SSID);
+
+						byte[] byteArray = BitConverter.GetBytes(info.IpAddress);
+						Java.Net.InetAddress inetAddress = Java.Net.InetAddress.GetByAddress(byteArray);
+						string ipaddress = inetAddress.HostAddress;
+						builder.AppendFormat("IpAddress : {0}\n", ipaddress);
+						break;
+					case ConnectivityType.Mobile:
+						break;
+					default: break;
+				}
+			}
+
+			var telephony = (Android.Telephony.TelephonyManager)context.GetSystemService(Context.TelephonyService);
+			if (telephony != null)
+			{
+				builder.Append($"SIM State : {telephony.SimState}\n");
+			}
+
+			_StatusView.Text = builder.ToString();
+		}
+
+		/// <summary>
+		/// GetNetworkInfo wrapper
+		/// </summary>
+		/// <param name="type"></param>
+		/// <returns></returns>
+		List<NetworkInfo> GetNetworkInfo(ConnectivityType type)
+		{
+			List<NetworkInfo> infos = new List<NetworkInfo>();
+
+			// OS version が5.1以上向け
+			if (Build.VERSION.SdkInt >= BuildVersionCodes.LollipopMr1){
+				var networks = _ConnectivityManager.GetAllNetworks();
+				foreach (var network in networks){
+					var networkinfo = _ConnectivityManager.GetNetworkInfo(network);
+					if (networkinfo.Type == ConnectivityType.Mobile){
+						infos.Add(networkinfo);
+					}
+				}
+			}
+			else{
+				// Lollipop以前の端末はこっちの処理
+				NetworkInfo MobileInfo = _ConnectivityManager.GetNetworkInfo(ConnectivityType.Mobile);
+				infos.Add(MobileInfo);
+			}
+
+			return infos;
 		}
 
 
@@ -194,42 +276,6 @@ namespace NetworkDeviceSwitch
 			EnableSwitchView(true);
 		}
 
-		/// <summary>
-		/// 通信情報確認
-		/// </summary>
-		void CheckNetworkState()
-		{
-
-			bool isOnline = WifiUtility.IsOnline(_Application);
-
-
-			StringBuilder builder = new StringBuilder();
-			builder.AppendFormat("SDK Build Version : {0}\n", Build.VERSION.Sdk);
-			builder.AppendFormat("NetworkState : {0}\n", (isOnline ? "Online" : "Offline"));
-
-			if(isOnline) {
-				NetworkInfo activeNetworkInfo = _ConnectivityManager.ActiveNetworkInfo;
-				builder.AppendFormat("ConnectType : {0}\n", activeNetworkInfo.TypeName);
-
-				switch(activeNetworkInfo.Type) {
-				case ConnectivityType.Wifi:
-					WifiInfo info = _WifiManager.ConnectionInfo;
-					builder.AppendFormat("BSSID : {0}\n", info.BSSID);
-					builder.AppendFormat("SSID : {0}\n", info.SSID);
-
-					byte[] byteArray = BitConverter.GetBytes(info.IpAddress);
-					Java.Net.InetAddress inetAddress = Java.Net.InetAddress.GetByAddress(byteArray);
-					string ipaddress = inetAddress.HostAddress;
-					builder.AppendFormat("IpAddress : {0}\n", ipaddress);
-					break;
-				case ConnectivityType.Mobile:
-					break;
-				default: break;
-				}
-			}
-
-			_StatusView.Text = builder.ToString();
-		}
 
 
 		#endregion // WifiMethod

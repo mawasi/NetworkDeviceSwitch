@@ -8,6 +8,8 @@ using Android.Content;
 using Android.Widget;
 using Android.Net;
 using Android.Net.Wifi;
+using Android.OS;
+using Android.Telephony;
 
 namespace NetworkDeviceSwitch
 {
@@ -33,6 +35,40 @@ namespace NetworkDeviceSwitch
 			NetworkInfo info = connectivityManager?.ActiveNetworkInfo;
 		
 			return info?.IsConnected ?? false;	
+		}
+
+		/// <summary>
+		/// Check Mobile data connection enabled.
+		/// モバイルデータ通信が可能かどうか
+		/// </summary>
+		/// <returns></returns>
+		static public bool IsMobileDataConnectionEnabled(Context context)
+		{
+			bool result = false;
+
+			if(!IsOnline(context)) return result;
+
+			var ConnectivityManager = (ConnectivityManager)context.GetSystemService(Context.ConnectivityService);
+#if true
+			// OS version が5.1以上向け
+			if(Build.VERSION.SdkInt >= BuildVersionCodes.LollipopMr1){
+				var networks = ConnectivityManager.GetAllNetworks();
+				foreach(var network in networks){
+					var networkinfo = ConnectivityManager.GetNetworkInfo(network);
+					if(networkinfo.Type == ConnectivityType.Mobile){
+						result = networkinfo.IsAvailable;
+						break;
+					}
+				}
+//				SubscriptionManager
+			}
+			else{
+				// Lollipop以前の端末はこっちの処理
+				NetworkInfo MobileInfo = ConnectivityManager.GetNetworkInfo(ConnectivityType.Mobile);
+				result = MobileInfo.IsAvailable;
+			}
+#endif
+			return result;
 		}
 
 		#region WifiMethod
