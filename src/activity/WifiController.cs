@@ -193,14 +193,13 @@ namespace NetworkDeviceSwitch
 			{
 				NetworkInfo activeNetworkInfo = _ConnectivityManager.ActiveNetworkInfo;
 				builder.Append($"ConnectType : {activeNetworkInfo.TypeName}\n");
-
-				List<NetworkInfo> mobileinfos = GetNetworkInfo(ConnectivityType.Mobile);
-				mobileinfos = GetNetworkInfo(ConnectivityType.Mobile);
+/*
+				List<NetworkInfo> mobileinfos = WifiUtility.GetNetworkInfo(context);
 				for(int i = 0; i < mobileinfos.Count; i++){
 					builder.Append($"Mobile[{i}] IsAvailable : {mobileinfos[i].IsAvailable}\n");
 					builder.Append($"Mobile[{i}] IsConnected : {mobileinfos[i].IsConnectedOrConnecting}\n");
 				}
-
+*/
 
 				switch (activeNetworkInfo.Type)
 				{
@@ -228,35 +227,6 @@ namespace NetworkDeviceSwitch
 
 			_StatusView.Text = builder.ToString();
 		}
-
-		/// <summary>
-		/// GetNetworkInfo wrapper
-		/// </summary>
-		/// <param name="type"></param>
-		/// <returns></returns>
-		List<NetworkInfo> GetNetworkInfo(ConnectivityType type)
-		{
-			List<NetworkInfo> infos = new List<NetworkInfo>();
-
-			// OS version が5.1以上向け
-			if (Build.VERSION.SdkInt >= BuildVersionCodes.LollipopMr1){
-				var networks = _ConnectivityManager.GetAllNetworks();
-				foreach (var network in networks){
-					var networkinfo = _ConnectivityManager.GetNetworkInfo(network);
-					if (networkinfo.Type == ConnectivityType.Mobile){
-						infos.Add(networkinfo);
-					}
-				}
-			}
-			else{
-				// Lollipop以前の端末はこっちの処理
-				NetworkInfo MobileInfo = _ConnectivityManager.GetNetworkInfo(ConnectivityType.Mobile);
-				infos.Add(MobileInfo);
-			}
-
-			return infos;
-		}
-
 
 		#region WifiMethod
 
@@ -353,13 +323,18 @@ namespace NetworkDeviceSwitch
 
 				Toast.MakeText(_Application, message, ToastLength.Short).Show();
 			}
-			else {
+			else {	// WifiAP 有効,無効化失敗時
 				var message = e.IsChecked == true ? "WifiAp Enabling is fail." : "WifiAp Disabling is fail.";
 	//			_TetheringSwitch.Checked = e.IsChecked == true ? false : true;
 
 				Toast.MakeText(_Application, message, ToastLength.Short).Show();
-			}
 
+				// スイッチの表示とデバイスの状態が一致してなかったら、デバイスの状態にスイッチを合わせておく
+				bool wifiApEnabled = WifiUtility.IsWifiApEnabled(_Application);
+				if(e.IsChecked != wifiApEnabled){
+					_TetheringSwitch.Checked = wifiApEnabled;
+				}
+			}
 #endif
 
 		}

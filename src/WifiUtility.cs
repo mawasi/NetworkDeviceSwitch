@@ -47,29 +47,59 @@ namespace NetworkDeviceSwitch
 			bool result = false;
 
 			if(!IsOnline(context)) return result;
-
-			var ConnectivityManager = (ConnectivityManager)context.GetSystemService(Context.ConnectivityService);
-#if true
-			// OS version が5.1以上向け
-			if(Build.VERSION.SdkInt >= BuildVersionCodes.LollipopMr1){
-				var networks = ConnectivityManager.GetAllNetworks();
-				foreach(var network in networks){
-					var networkinfo = ConnectivityManager.GetNetworkInfo(network);
-					if(networkinfo.Type == ConnectivityType.Mobile){
-						result = networkinfo.IsAvailable;
-						break;
-					}
+#if false	// ConnectivityManager使ってチェックするパターン。5.1以降うまく欲しい情報が取れない。
+			List<NetworkInfo> infos = GetNetworkInfo(context);
+			foreach(var info in infos){
+				if(info.Type == ConnectivityType.Mobile){
+					result = info.IsAvailable;
+					break;
 				}
-//				SubscriptionManager
 			}
-			else{
-				// Lollipop以前の端末はこっちの処理
-				NetworkInfo MobileInfo = ConnectivityManager.GetNetworkInfo(ConnectivityType.Mobile);
-				result = MobileInfo.IsAvailable;
+#else
+			// SimState.Ready = モバイルデータ通信可能とみなす
+			var TelephonyManager = (TelephonyManager)context.GetSystemService(Context.TelephonyService);
+			if(TelephonyManager.SimState == SimState.Ready){
+				result = true;
 			}
 #endif
 			return result;
 		}
+
+
+		/// <summary>
+		/// GetNetworkInfo wrapper
+		/// </summary>
+		/// <remarks>
+		/// GetAllNetworks では、トラッキングされたネットワークしか取得されない。
+		/// トラッキングされたがどういう意味かいまいちわからないけど、
+		/// 挙動的には GetActiveNetwork と変わらない動きする。
+		/// </remarks>
+		/// <param name="type"></param>
+		/// <returns></returns>
+		static public List<NetworkInfo> GetNetworkInfo(Context context)
+		{
+			List<NetworkInfo> infos = new List<NetworkInfo>();
+
+			var ConnectivityManager = (ConnectivityManager)context.GetSystemService(Context.ConnectivityService);
+
+			// OS version が5.1以上向け
+			if (Build.VERSION.SdkInt >= BuildVersionCodes.LollipopMr1){
+				var networks = ConnectivityManager.GetAllNetworks();
+				foreach (var network in networks){
+					var networkinfo = ConnectivityManager.GetNetworkInfo(network);
+					infos.Add(networkinfo);
+				}
+			}
+			else{
+				// Lollipop以前の端末はこっちの処理
+				NetworkInfo[] MobileInfo = ConnectivityManager.GetAllNetworkInfo();
+				infos.AddRange(MobileInfo);
+			}
+
+			return infos;
+		}
+
+
 
 		#region WifiMethod
 
@@ -186,7 +216,7 @@ namespace NetworkDeviceSwitch
 
 
 		/// <summary>
-		/// 
+		/// Wifi AP が有効かどうか
 		/// </summary>
 		/// <param name="context"></param>
 		/// <returns></returns>
@@ -301,7 +331,14 @@ namespace NetworkDeviceSwitch
 			};
 
 
+			// モバイルデータ通信ができない場合はテザリング機能ON,OFFを行わない。
+			if(!IsMobileDataConnectionEnabled(context)){
+				return false;
+			}
+
+
 			bool result = false;
+
 
 			WifiApState wifiApState = GetWifiApState(context);
 

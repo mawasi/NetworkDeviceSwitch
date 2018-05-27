@@ -70,8 +70,6 @@ namespace NetworkDeviceSwitch
 			}
 */
 
-
-
 		}
 
 		/// <summary>
